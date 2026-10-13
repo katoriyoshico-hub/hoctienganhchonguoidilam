@@ -62,6 +62,7 @@ test("captions parse JSON3 and XML, preserve timing and decode entities", () => 
     "It's fine & clear.",
   );
   assert.equal(parseCaptionBody("not captions").length, 0);
+  assert.equal(parseCaptionBody("<html><p>Sign in to continue</p></html>").length,0);
   assert.equal(captionTracksFromHtml(html([track])).length, 1);
 });
 test("retrieval selects captions and requests a validated timedtext URL", async () => {
@@ -158,4 +159,22 @@ test("transcript endpoint validates before contacting provider and returns clear
   } finally {
     await new Promise((resolve) => server.close(resolve));
   }
+});
+
+test('empty JSON3 captions fall back to XML and preserve text and timing', async () => {
+  const calls=[];
+  const result=await fetchYoutubeTranscript(id,'en',{fetchImpl:async url=>{
+    calls.push(url);
+    return new Response(calls.length===1 ? html([track]) : calls.length===2 ? '' : '<transcript><text start="3" dur="2">Hello there.</text></transcript>');
+  }});
+  assert.equal(calls.length,3);
+  assert.equal(new URL(calls[2]).searchParams.has('fmt'),false);
+  assert.equal(result.text,'Hello there.');
+  assert.equal(result.segments[0].offset,3);
+  assert.deepEqual(parseCaptionBody('<timedtext><body><p t="1500" d="2000"><s>Hello</s><s>there.</s></p></body></timedtext>'),[{text:'Hello there.',offset:1.5,duration:2}]);
+});
+test('all empty caption formats produce an explicit failure',async()=>{
+  let calls=0;
+  await assert.rejects(fetchYoutubeTranscript(id,'en',{fetchImpl:async()=>new Response(++calls===1?html([track]):'')}),e=>e.code==='EMPTY_CAPTIONS');
+  assert.equal(calls,4);
 });

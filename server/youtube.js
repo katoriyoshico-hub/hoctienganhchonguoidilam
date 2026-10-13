@@ -140,6 +140,13 @@ export function parseCaptionBody(body) {
       }),
     );
   }
+  if (!items.length && /<timedtext\b/.test(body)) {
+    items = [...body.matchAll(/<p\b([^>]*)>([\s\S]*?)<\/p>/g)].map(m => ({
+      text: m[2].replace(/<[^>]*>/g, " "),
+      offset: Number(m[1].match(/\bt="([^"]+)"/)?.[1] || 0) / 1000,
+      duration: Number(m[1].match(/\bd="([^"]+)"/)?.[1] || 0) / 1000,
+    }));
+  }
   return items
     .map((item) => ({ ...item, text: decodeText(item.text) }))
     .filter(
@@ -224,10 +231,15 @@ export async function fetchYoutubeTranscript(
         "Không xác minh được nguồn phụ đề của video.",
         502,
       );
-    url.searchParams.set("fmt", "json3");
-    const segments = parseCaptionBody(
-      await readBounded(await fetchImpl(url.href, options)),
-    );
+    // Some tracks return an empty JSON3 body but still provide XML captions.
+    let segments = [];
+    for (const format of ["json3", null, "srv3"]) {
+      if (format) url.searchParams.set("fmt", format);
+      else url.searchParams.delete("fmt");
+      const body = await readBounded(await fetchImpl(url.href, options));
+      segments = parseCaptionBody(body);
+      if (segments.length) break;
+    }
     if (segments.length > 5000)
       throw new TranscriptError(
         "VIDEO_TOO_LONG",
@@ -236,7 +248,7 @@ export async function fetchYoutubeTranscript(
     if (!segments.length)
       throw new TranscriptError(
         "EMPTY_CAPTIONS",
-        "YouTube trả về phụ đề trống. Hãy thử lại hoặc chọn video khác.",
+        "YouTube trả về phụ đề trống ở các định dạng đã thử. Bạn có thể mở bản chép lời trên YouTube, sao chép và dán vào phần bên dưới để tạo bài đọc.",
       );
     return {
       videoId,

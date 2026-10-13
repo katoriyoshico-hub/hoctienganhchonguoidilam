@@ -794,9 +794,9 @@ test("release diagnostics report real database counts and avoid caching the HTML
   const info = await fetch(origin + "/api/version");
   assert.equal(info.status, 200);
   assert.equal(info.headers.get("cache-control"), "no-store");
-  assert.equal(info.headers.get("x-ct-speak-version"), "1.6.3");
+  assert.equal(info.headers.get("x-ct-speak-version"), "1.6.4");
   const version = await info.json();
-  assert.equal(version.version, "1.6.3");
+  assert.equal(version.version, "1.6.4");
   assert.equal(version.lessons, 87);
   assert.equal(version.scenarios, 82);
   assert.equal(version.phrases, 1107);
@@ -806,7 +806,7 @@ test("release diagnostics report real database counts and avoid caching the HTML
     assert.equal(response.status, 200);
     assert.ok(response.headers.get("cache-control").includes("no-store"));
     if (path === "/app-version.json")
-      assert.equal((await response.json()).version, "1.6.3");
+      assert.equal((await response.json()).version, "1.6.4");
   }
 });
 
@@ -815,7 +815,7 @@ test("home and lesson library show illustrations and the visible release label",
   try {
     const document = dom.window.document;
     assert.ok(
-      document.querySelector(".sidebar-bottom").textContent.includes("1.6.3"),
+      document.querySelector(".sidebar-bottom").textContent.includes("1.6.4"),
     );
     const heroImage = document.querySelector(".hero-visual img");
     assert.ok(heroImage && heroImage.getAttribute("alt"));
@@ -1037,6 +1037,10 @@ test("YouTube reader submits URL, shows timed transcript, copies text and report
       2,
     );
     assert.ok(document.body.textContent.includes("Phụ đề tự động"));
+    assert.ok(document.querySelector('.youtube-study-text').textContent.includes('Welcome to our office.'));
+    click(dom,"Các lượt nói");
+    await waitFor(()=>document.querySelectorAll('.youtube-turn').length===2);
+    assert.equal(document.querySelector('.youtube-turn strong').textContent,'Đoạn nói 1');
     document.querySelector('[aria-label="Nghe từ giây 15"]').click();
     await waitFor(() =>
       document.querySelector(".youtube-result iframe").src.includes("start=15"),
@@ -1057,6 +1061,16 @@ test("YouTube reader submits URL, shows timed transcript, copies text and report
         .textContent.includes("không có phụ đề"),
     );
     assert.equal(document.querySelector(".youtube-result"), null);
+    const pasted=document.querySelector('#youtube-pasted');
+    Object.getOwnPropertyDescriptor(dom.window.HTMLTextAreaElement.prototype,'value').set.call(pasted,'Alex: Hello.\nMinh: Good morning.');
+    pasted.dispatchEvent(new dom.window.Event('input',{bubbles:true}));
+    await waitFor(()=>!document.querySelector('.youtube-manual button').disabled);
+    click(dom,'Tạo bài đọc từ văn bản');
+    await waitFor(()=>document.querySelector('.youtube-result'));
+    assert.ok(document.body.textContent.includes('Văn bản bạn đã dán'));
+    assert.equal(document.querySelector('.youtube-result iframe'),null);
+    assert.equal(document.querySelector('.youtube-turn strong').textContent,'Alex');
+    assert.equal(calls.length,2);
   } finally {
     dom.window.close();
     await new Promise((resolve) => youtubeServer.close(resolve));
