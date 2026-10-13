@@ -7,7 +7,8 @@ import { migrate } from "./migrate.js";
 export async function startServer({
   pool,
   port = Number(process.env.PORT || 3001),
-  host = process.env.HOST || "0.0.0.0",
+  // Hosting must remain reachable even when the platform injects HOST=localhost.
+  host = "0.0.0.0",
 }) {
   // A fresh deployment has no schema_migrations table yet. Initialize the
   // database before serving traffic; migrate() is transactional and repeatable.
@@ -32,7 +33,7 @@ if (
     });
     const server = await startServer({ pool });
     console.log(
-      `CT-Speak started on port ${server.address().port}; database migrations complete.`,
+      `CT-Speak listening on ${server.address().address}:${server.address().port}; database migrations complete.`,
     );
     let stopping = false;
     const shutdown = () => {

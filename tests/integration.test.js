@@ -55,6 +55,28 @@ test("deployment starts on an empty database and restarts without reseeding", as
     await new Promise((resolve) => restarted.close(resolve));
   }
 });
+test("hosting stays externally reachable when HOST is set to loopback", async () => {
+  const previousHost = process.env.HOST;
+  const previousPort = process.env.PORT;
+  let hosted;
+  try {
+    process.env.HOST = "127.0.0.1";
+    process.env.PORT = "0";
+    // Exercise defaults used by npm start, rather than explicitly fixing host.
+    hosted = await startServer({ pool });
+    assert.equal(hosted.address().address, "0.0.0.0");
+    const response = await fetch(
+      `http://127.0.0.1:${hosted.address().port}/api/health`,
+    );
+    assert.equal(response.status, 200);
+  } finally {
+    if (hosted) await new Promise((resolve) => hosted.close(resolve));
+    if (previousHost === undefined) delete process.env.HOST;
+    else process.env.HOST = previousHost;
+    if (previousPort === undefined) delete process.env.PORT;
+    else process.env.PORT = previousPort;
+  }
+});
 test("all ten PRD tables exist; migrations repeat without duplicating content", async () => {
   await migrate(pool);
   const { rows } = await pool.query(
