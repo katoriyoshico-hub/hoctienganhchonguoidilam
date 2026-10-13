@@ -1,11 +1,12 @@
 import express from "express";
+import { registerYoutube } from "./youtube.js";
 import { registerState } from "./state.js";
 import { fileURLToPath } from "node:url";
 import { readFileSync } from "node:fs";
 const { version } = JSON.parse(
   readFileSync(new URL("../package.json", import.meta.url), "utf8"),
 );
-export function createApp(pool) {
+export function createApp(pool, options = {}) {
   const app = express();
   app.disable("x-powered-by");
   app.use((_req, res, next) => {
@@ -27,6 +28,7 @@ export function createApp(pool) {
   });
   app.use(express.json({ limit: "32kb" }));
   registerState(app, pool);
+  registerYoutube(app, options);
   app.get("/api/health", async (_req, res) => {
     await pool.query("SELECT 1");
     res.json({ status: "ok" });

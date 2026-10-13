@@ -128,17 +128,17 @@ Migration thêm dữ liệu và bảng `dialogue_lines`, không xóa bài học 
 
 ## Kiểm tra khi website vẫn hiện 8 bài hoặc giao diện cũ
 
-Bản 1.3.1 có nhãn **Phiên bản 1.3.1** ở chân thanh điều hướng, ảnh trên Tổng quan/thẻ Bài học và mục Luyện nghe từ vựng. HTML và API có header `Cache-Control: no-store`; asset JavaScript/CSS của Vite dùng tên theo nội dung. Ứng dụng không có service worker.
+Bản 1.4.0 có nhãn **Phiên bản 1.4.0** ở chân thanh điều hướng, ảnh trên Tổng quan/thẻ Bài học và mục Luyện nghe từ vựng. HTML và API có header `Cache-Control: no-store`; asset JavaScript/CSS của Vite dùng tên theo nội dung. Ứng dụng không có service worker.
 
 - `/app-version.json`: phiên bản frontend đã build.
 - `/api/version`: phiên bản backend, số bài/hội thoại/mẫu câu thực tế trong PostgreSQL và migration mới nhất; không trả về chuỗi kết nối hay biến môi trường.
 - Mọi phản hồi backend có header `X-CT-Speak-Version`.
 
-Với bản này, frontend/backend đều là `1.3.1`; CSDL phải có 39 bài, 34 hội thoại, 483 mẫu câu/từ vựng và migration `006_illustrated_conversations.sql`. Nếu website còn thiếu mục Luyện nghe từ vựng và hiện 8/8, giao diện được hiển thị là bản cũ. Nhật ký build đúng commit và HTTP 200 chưa chứng minh tên miền đang phục vụ đúng container.
+Với bản này, frontend/backend đều là `1.4.0`; CSDL phải có 39 bài, 34 hội thoại, 483 mẫu câu/từ vựng và migration `006_illustrated_conversations.sql`. Nếu website còn thiếu mục Luyện nghe từ vựng và hiện 8/8, giao diện được hiển thị là bản cũ. Nhật ký build đúng commit và HTTP 200 chưa chứng minh tên miền đang phục vụ đúng container.
 
 Sau khi triển khai, mở `/api/version` và `/app-version.json` để đối chiếu. Nếu vẫn trả về bản cũ hoặc không tồn tại mặc dù image mới đã LIVE, cần kiểm tra container thực tế mà Traefik đang định tuyến hoặc cache của nền tảng. Không xóa CSDL để xử lý lỗi frontend cũ.
 
-Banner trang Tổng quan dùng hình minh họa giao tiếp mới, màu sắc sống động và bố cục hiển thị ảnh trên cả máy tính/điện thoại. Tệp `public/illustrations/hero-conversation-vivid.png` được đóng gói cùng frontend; phiên bản giao diện hiện tại là 1.3.1.
+Banner trang Tổng quan dùng hình minh họa giao tiếp mới, màu sắc sống động và bố cục hiển thị ảnh trên cả máy tính/điện thoại. Tệp `public/illustrations/hero-conversation-vivid.png` được đóng gói cùng frontend; phiên bản giao diện hiện tại là 1.4.0.
 
 ## Mỗi bài có 10 câu giao tiếp
 
@@ -146,7 +146,7 @@ Migration `007_ten_sentences_per_lesson.sql` bổ sung 279 câu theo từng tìn
 
 Flashcards có đủ 390 câu và 93 từ vựng, tổng 483 thẻ. API trả `phrases` cho 10 câu thực hành, `vocabulary` cho từ vựng và `flashcards` kèm `phraseIndex` ổn định. Các câu mới được thêm sau mã câu/từ cũ; không thay đổi ID, thứ tự thẻ cũ trong từng bài, tiến độ hoàn thành hay lịch ôn đã lưu. Bài đã hoàn thành không tự bị đánh dấu chưa hoàn thành; người học có thể mở lại để luyện các câu mới.
 
-Phiên bản hiện tại: **1.3.1**. Triển khai lại từ `main`; `npm start` tự chạy migration mới. Không cần xóa hoặc seed lại CSDL.
+Phiên bản hiện tại: **1.4.0**. Triển khai lại từ `main`; `npm start` tự chạy migration mới. Không cần xóa hoặc seed lại CSDL.
 
 ## Trò chơi sau mỗi bài học
 
@@ -159,4 +159,16 @@ Nhập đáp án và nhấn **Kiểm tra đáp án** (hoặc Enter), xem phản 
 
 Kết thúc lượt chơi có điểm trên 5, nút **Chơi lại** với bộ câu được xáo lại và **Về thư viện**. Trò chơi có cho cả 39 bài. Bài học vẫn được lưu hoàn thành nếu người học rời trò chơi; điểm trò chơi chỉ hiển thị trong lượt chơi hiện tại, chưa lưu lịch sử điểm trên máy chủ. Không cần migration mới hoặc khóa API.
 
-Giao diện 1.3.1 dùng nền lavender–mint có họa tiết chấm, màu nhấn tím/hồng, thẻ viền nhẹ và bóng màu. Theme được đóng gói trong `theme.css`; giao diện có focus bàn phím và tôn trọng tùy chọn giảm chuyển động.
+Giao diện 1.4.0 dùng nền lavender–mint có họa tiết chấm, màu nhấn tím/hồng, thẻ viền nhẹ và bóng màu. Theme được đóng gói trong `theme.css`; giao diện có focus bàn phím và tôn trọng tùy chọn giảm chuyển động.
+
+## YouTube → Văn bản (phụ đề miễn phí)
+
+Mở mục **YouTube → Văn bản**, dán link YouTube (watch, youtu.be hoặc Shorts), chọn phụ đề tiếng Anh/tiếng Việt/ngôn ngữ gốc và nhấn **Lấy văn bản**. Ứng dụng hiển thị các đoạn có mốc thời gian, nút nghe từ đoạn đó trong video, sao chép toàn văn và tải TXT.
+
+Backend `POST /api/youtube/transcript` nhận `{url, language}`; xác thực mã video, lấy danh sách phụ đề từ trang YouTube và đọc track phụ đề. Chỉ chọn track đã có, không tự dịch. Hỗ trợ phụ đề người tạo video và phụ đề tự động của YouTube. Không có khóa API, không thu phí dịch vụ nhận dạng giọng nói, không tải âm thanh về máy chủ.
+
+Giới hạn thực tế: video riêng tư/hạn chế, video không có phụ đề hoặc YouTube chặn truy cập từ IP hosting có thể không lấy được. Truy cập phụ đề công khai này không phải API chính thức có cam kết ổn định; YouTube thay đổi cấu trúc có thể cần cập nhật bộ đọc. Clip không có phụ đề chưa được nhận dạng âm thanh riêng. Giới hạn 20 giây lấy dữ liệu, 5 MB mỗi phản hồi, 5000 đoạn phụ đề và hai lượt lấy đồng thời. Lỗi được trả về rõ ràng, không tạo văn bản giả hoặc báo thành công với kết quả trống.
+
+Máy chủ Vibehost cần kết nối HTTPS tới `www.youtube.com`; trình duyệt cần truy cập `www.youtube-nocookie.com` để xem video nhúng. Không cần biến môi trường mới. Văn bản hiển thị trong phiên trang, có thể tải TXT; chưa lưu thư viện transcript vào CSDL.
+
+Kiểm thử dùng phản hồi YouTube giả lập để kiểm tra parsing, ngôn ngữ, mốc thời gian, lỗi, API và giao diện. Lần kiểm tra YouTube trực tiếp từ môi trường Codex gặp lỗi kết nối mạng, nên chưa xác minh khả năng lấy phụ đề thật từ IP của Vibehost. Phiên bản ứng dụng: **1.4.0**.

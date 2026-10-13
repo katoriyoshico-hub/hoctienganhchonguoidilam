@@ -6,6 +6,7 @@ import {
   Briefcase,
   Mic,
   Volume2,
+  Play,
   RotateCcw,
   CheckCircle2,
   ArrowRight,
@@ -22,6 +23,7 @@ import "./style.css";
 import "./theme.css";
 import Conversation, { SceneIllustration } from "./Conversation.jsx";
 import LessonGame from "./LessonGame.jsx";
+import YoutubeReader from "./YoutubeReader.jsx";
 async function api(path, body, method = "PUT") {
   const r = await fetch(path, {
     method,
@@ -379,6 +381,7 @@ function App({ lessons, scenarios, listeningExercises, initialState }) {
     ["lessons", BookOpen, "Bài học"],
     ["roleplay", MessageCircle, "Hội thoại"],
     ["listening", Volume2, "Luyện nghe từ vựng"],
+    ["youtube", Play, "YouTube → Văn bản"],
     ["flashcards", Layers, "Flashcards"],
     ["progress", ChartNoAxesColumn, "Tiến độ"],
   ];
@@ -774,6 +777,7 @@ function App({ lessons, scenarios, listeningExercises, initialState }) {
                 onClose={() => navigate("lessons")}
               />
             )}
+            {page === "youtube" && <YoutubeReader />}
             {page === "listening" && (
               <ListeningPractice exercises={listeningExercises} speak={speak} />
             )}

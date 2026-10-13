@@ -8,6 +8,7 @@ import pg from "pg";
 import { JSDOM } from "jsdom";
 import { migrate } from "../server/migrate.js";
 import { createApp } from "../server/app.js";
+import { TranscriptError } from "../server/youtube.js";
 import { startServer } from "../server/index.js";
 let admin, pool, server, origin;
 const name = `ct_speak_test_${process.pid}`;
@@ -224,20 +225,20 @@ async function waitFor(predicate) {
   }
   assert.fail("UI condition timed out");
 }
-async function browser(identity) {
+async function browser(identity, base = origin) {
   const html = await readFile(
     new URL("../dist/index.html", import.meta.url),
     "utf8",
   );
   const path = html.match(/src="([^\"]+\.js)"/)[1];
-  const code = await (await fetch(origin + path)).text();
+  const code = await (await fetch(base + path)).text();
   const dom = new JSDOM('<div id="root"></div>', {
-    url: origin,
+    url: base,
     runScripts: "outside-only",
     pretendToBeVisual: true,
   });
   dom.window.fetch = (path, options = {}) =>
-    fetch(new URL(path, origin), {
+    fetch(new URL(path, base), {
       ...options,
       signal: undefined,
       headers: { ...options.headers, Cookie: identity },
@@ -807,9 +808,9 @@ test("release diagnostics report real database counts and avoid caching the HTML
   const info = await fetch(origin + "/api/version");
   assert.equal(info.status, 200);
   assert.equal(info.headers.get("cache-control"), "no-store");
-  assert.equal(info.headers.get("x-ct-speak-version"), "1.3.1");
+  assert.equal(info.headers.get("x-ct-speak-version"), "1.4.0");
   const version = await info.json();
-  assert.equal(version.version, "1.3.1");
+  assert.equal(version.version, "1.4.0");
   assert.equal(version.lessons, 39);
   assert.equal(version.scenarios, 34);
   assert.equal(version.phrases, 483);
@@ -819,7 +820,7 @@ test("release diagnostics report real database counts and avoid caching the HTML
     assert.equal(response.status, 200);
     assert.ok(response.headers.get("cache-control").includes("no-store"));
     if (path === "/app-version.json")
-      assert.equal((await response.json()).version, "1.3.1");
+      assert.equal((await response.json()).version, "1.4.0");
   }
 });
 
@@ -828,7 +829,7 @@ test("home and lesson library show illustrations and the visible release label",
   try {
     const document = dom.window.document;
     assert.ok(
-      document.querySelector(".sidebar-bottom").textContent.includes("1.3.1"),
+      document.querySelector(".sidebar-bottom").textContent.includes("1.4.0"),
     );
     const heroImage = document.querySelector(".hero-visual img");
     assert.ok(heroImage && heroImage.getAttribute("alt"));
@@ -984,5 +985,89 @@ test("end-of-lesson game grades typed answers, shows results and resets replay",
     await waitFor(() => document.querySelector(".lesson-grid"));
   } finally {
     dom.window.close();
+  }
+});
+
+test("YouTube reader submits URL, shows timed transcript, copies text and reports missing captions", async () => {
+  const calls = [];
+  const youtubeServer = createApp(pool, {
+    transcriptProvider: async (id, language) => {
+      calls.push({ id, language });
+      if (id === "zzzzzzzzzzz")
+        throw new TranscriptError("NO_CAPTIONS", "Video không có phụ đề.");
+      return {
+        videoId: id,
+        language,
+        source: "youtube-auto-captions",
+        segments: [
+          { text: "Welcome to our office.", offset: 0, duration: 3 },
+          { text: "How can I help you?", offset: 15, duration: 4 },
+        ],
+        text: "Welcome to our office.\nHow can I help you?",
+      };
+    },
+  }).listen(0, "127.0.0.1");
+  await once(youtubeServer, "listening");
+  const base = `http://127.0.0.1:${youtubeServer.address().port}`;
+  const dom = await browser(cookie, base);
+  let copied = "";
+  Object.defineProperty(dom.window.navigator, "clipboard", {
+    value: {
+      writeText: async (text) => {
+        copied = text;
+      },
+    },
+  });
+  try {
+    const document = dom.window.document;
+    click(dom, "YouTube → Văn bản");
+    await waitFor(() => document.querySelector(".youtube-form"));
+    const input = document.querySelector("#youtube-url");
+    const type = (value) => {
+      Object.getOwnPropertyDescriptor(
+        dom.window.HTMLInputElement.prototype,
+        "value",
+      ).set.call(input, value);
+      input.dispatchEvent(new dom.window.Event("input", { bubbles: true }));
+    };
+    type("https://youtu.be/abcdefghijk");
+    await waitFor(
+      () => !document.querySelector(".youtube-form button").disabled,
+    );
+    document
+      .querySelector(".youtube-form")
+      .dispatchEvent(
+        new dom.window.Event("submit", { bubbles: true, cancelable: true }),
+      );
+    await waitFor(() => document.querySelector(".youtube-result"));
+    assert.deepEqual(calls[0], { id: "abcdefghijk", language: "en" });
+    assert.equal(
+      document.querySelectorAll(".transcript-segments article").length,
+      2,
+    );
+    assert.ok(document.body.textContent.includes("Phụ đề tự động"));
+    document.querySelector('[aria-label="Nghe từ giây 15"]').click();
+    await waitFor(() =>
+      document.querySelector(".youtube-result iframe").src.includes("start=15"),
+    );
+    click(dom, "Sao chép văn bản");
+    await waitFor(() => copied.length > 0);
+    assert.ok(copied.includes("Welcome"));
+    type("https://youtu.be/zzzzzzzzzzz");
+    document
+      .querySelector(".youtube-form")
+      .dispatchEvent(
+        new dom.window.Event("submit", { bubbles: true, cancelable: true }),
+      );
+    await waitFor(() => document.querySelector(".youtube-error"));
+    assert.ok(
+      document
+        .querySelector(".youtube-error")
+        .textContent.includes("không có phụ đề"),
+    );
+    assert.equal(document.querySelector(".youtube-result"), null);
+  } finally {
+    dom.window.close();
+    await new Promise((resolve) => youtubeServer.close(resolve));
   }
 });
