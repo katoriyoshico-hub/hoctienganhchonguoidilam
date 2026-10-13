@@ -249,6 +249,27 @@ function ListeningPractice({ exercises, speak, fields, levels }) {
   );
 }
 
+function LevelProgress({ levels, lessons, done }) {
+  const completedIds = new Set(done);
+  const completed = lessons.filter(lesson => completedIds.has(lesson.id)).length;
+  return <section className="level-progress" aria-label="Tiến độ bài học theo cấp độ">
+    <div className="level-progress-heading"><h2>Tiến độ bài học theo cấp độ</h2><span>{completed}/{lessons.length} bài đã hoàn thành</span></div>
+    <div className="level-progress-columns">
+      {[...levels].sort((a,b)=>a.order-b.order).map(level => {
+        const items = lessons.filter(lesson=>lesson.level===level.code);
+        const count = items.filter(lesson=>completedIds.has(lesson.id)).length;
+        const percent = items.length ? Math.round(count/items.length*100) : 0;
+        return <article className="level-progress-column" key={level.code} data-level={level.code}>
+          <span className="level-progress-code">{level.code}</span><h3>{level.title}</h3>
+          <strong>{percent}%</strong>
+          <div className="track" role="progressbar" aria-label={`Hoàn thành cấp độ ${level.code}`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={percent} aria-valuetext={`${count}/${items.length} bài, ${percent}%`}><i style={{width: `${percent}%`}} /></div>
+          <p>{count}/{items.length} bài hoàn thành</p>
+        </article>;
+      })}
+    </div>
+  </section>;
+}
+
 function App({ levels, fields, lessons, scenarios, listeningExercises, initialState }) {
   const [page, setPage] = useState("home"),
     [category, setCategory] = useState("all"),
@@ -493,20 +514,8 @@ function App({ levels, fields, lessons, scenarios, listeningExercises, initialSt
                     </div>
                   </div>
                 </section>
-                <div className="stats">
-                  <div className="stat">
-                    <span>Tiến độ bài học</span>
-                    <strong>
-                      {done.length}/{lessons.length}
-                    </strong>
-                    <div className="track">
-                      <i
-                        style={{
-                          width: (done.length / lessons.length) * 100 + "%",
-                        }}
-                      />
-                    </div>
-                  </div>
+                <LevelProgress levels={levels} lessons={lessons} done={done} />
+                <div className="stats home-secondary-stats">
                   <div className="stat">
                     <span>Thời gian đã học (ước tính)</span>
                     <strong>
@@ -1035,6 +1044,7 @@ function App({ levels, fields, lessons, scenarios, listeningExercises, initialSt
                   <h1>Tiến độ học tập</h1>
                   <p>Theo dõi bài đã hoàn thành và chọn mục tiêu học tập.</p>
                 </div>
+                <LevelProgress levels={levels} lessons={lessons} done={done} />
                 <div className="stats">
                   <div className="stat">
                     <span>Bài hoàn thành</span>

@@ -807,9 +807,9 @@ test("release diagnostics report real database counts and avoid caching the HTML
   const info = await fetch(origin + "/api/version");
   assert.equal(info.status, 200);
   assert.equal(info.headers.get("cache-control"), "no-store");
-  assert.equal(info.headers.get("x-ct-speak-version"), "1.15.0");
+  assert.equal(info.headers.get("x-ct-speak-version"), "1.16.0");
   const version = await info.json();
-  assert.equal(version.version, "1.15.0");
+  assert.equal(version.version, "1.16.0");
   assert.equal(version.lessons, 210);
   assert.equal(version.scenarios, 205);
   assert.equal(version.phrases, 4806);
@@ -819,7 +819,7 @@ test("release diagnostics report real database counts and avoid caching the HTML
     assert.equal(response.status, 200);
     assert.ok(response.headers.get("cache-control").includes("no-store"));
     if (path === "/app-version.json")
-      assert.equal((await response.json()).version, "1.15.0");
+      assert.equal((await response.json()).version, "1.16.0");
   }
 });
 
@@ -828,7 +828,7 @@ test("home and lesson library show illustrations and the visible release label",
   try {
     const document = dom.window.document;
     assert.ok(
-      document.querySelector(".sidebar-bottom").textContent.includes("1.15.0"),
+      document.querySelector(".sidebar-bottom").textContent.includes("1.16.0"),
     );
     assert.ok(!document.querySelector("nav").textContent.includes("YouTube"));
     const heroImage = document.querySelector(".hero-visual img");
@@ -1268,4 +1268,33 @@ test('listening field and level filters expose new topics and allow recovery fro
   assert.ok(document.querySelector('.listening-situation [lang="en"] p').textContent);
   assert.ok(document.querySelector('.listening-situation [lang="vi"] p').textContent);
  }finally{dom.window.close();}
+});
+
+test("level progress shows independent percentages in ascending columns on home and progress pages", async () => {
+  const profile = await fetch(origin+'/api/state');
+  const ownCookie = profile.headers.get('set-cookie').split(';')[0];
+  const {body:catalog}=await request('/api/catalog');
+  const a1=catalog.lessons.filter(l=>l.level==='A1');
+  for(const lesson of a1.slice(0,2)) {
+    const response=await fetch(origin+'/api/state/progress',{method:'PUT',headers:{Cookie:ownCookie,'Content-Type':'application/json'},body:JSON.stringify({lessonId:lesson.id})});
+    assert.equal(response.status,200);
+  }
+  const dom=await browser(ownCookie);
+  try {
+    const verify=()=>{
+      const columns=[...dom.window.document.querySelectorAll('.level-progress-column')];
+      assert.deepEqual(columns.map(c=>c.dataset.level),['A1','A2','B1','B2','C1','C2']);
+      assert.equal(columns[0].querySelector('strong').textContent,'6%');
+      assert.equal(columns[0].querySelector('p').textContent,'2/35 bài hoàn thành');
+      assert.equal(columns[0].querySelector('[role="progressbar"]').getAttribute('aria-valuenow'),'6');
+      for(const column of columns.slice(1)) {
+        assert.equal(column.querySelector('strong').textContent,'0%');
+        assert.equal(column.querySelector('p').textContent,'0/35 bài hoàn thành');
+      }
+    };
+    verify();
+    click(dom,'Tiến độ');
+    await waitFor(()=>dom.window.document.querySelector('h1')?.textContent==='Tiến độ học tập');
+    verify();
+  } finally {dom.window.close();}
 });
