@@ -128,17 +128,17 @@ Migration thêm dữ liệu và bảng `dialogue_lines`, không xóa bài học 
 
 ## Kiểm tra khi website vẫn hiện 8 bài hoặc giao diện cũ
 
-Bản 1.13.0 có nhãn **Phiên bản 1.13.0** ở chân thanh điều hướng, ảnh trên Tổng quan/thẻ Bài học và mục Luyện nghe từ vựng. HTML và API có header `Cache-Control: no-store`; asset JavaScript/CSS của Vite dùng tên theo nội dung. Ứng dụng không có service worker.
+Bản 1.13.1 có nhãn **Phiên bản 1.13.1** ở chân thanh điều hướng, ảnh trên Tổng quan/thẻ Bài học và mục Luyện nghe từ vựng. HTML và API có header `Cache-Control: no-store`; asset JavaScript/CSS của Vite dùng tên theo nội dung. Ứng dụng không có service worker.
 
 - `/app-version.json`: phiên bản frontend đã build.
 - `/api/version`: phiên bản backend, số bài/hội thoại/mẫu câu thực tế trong PostgreSQL và migration mới nhất; không trả về chuỗi kết nối hay biến môi trường.
 - Mọi phản hồi backend có header `X-CT-Speak-Version`.
 
-Với bản này, frontend/backend đều là `1.13.0`; CSDL phải có 210 bài, 205 hội thoại, 4806 mẫu câu/từ vựng và migration `016_thirty_five_lessons_per_level.sql`. Nếu website còn thiếu mục Luyện nghe từ vựng và hiện 8/8, giao diện được hiển thị là bản cũ. Nhật ký build đúng commit và HTTP 200 chưa chứng minh tên miền đang phục vụ đúng container.
+Với bản này, frontend/backend đều là `1.13.1`; CSDL phải có 210 bài, 205 hội thoại, 4806 mẫu câu/từ vựng và migration `016_thirty_five_lessons_per_level.sql`. Nếu website còn thiếu mục Luyện nghe từ vựng và hiện 8/8, giao diện được hiển thị là bản cũ. Nhật ký build đúng commit và HTTP 200 chưa chứng minh tên miền đang phục vụ đúng container.
 
 Sau khi triển khai, mở `/api/version` và `/app-version.json` để đối chiếu. Nếu vẫn trả về bản cũ hoặc không tồn tại mặc dù image mới đã LIVE, cần kiểm tra container thực tế mà Traefik đang định tuyến hoặc cache của nền tảng. Không xóa CSDL để xử lý lỗi frontend cũ.
 
-Banner trang Tổng quan dùng hình minh họa giao tiếp mới, màu sắc sống động và bố cục hiển thị ảnh trên cả máy tính/điện thoại. Tệp `public/illustrations/hero-conversation-vivid.png` được đóng gói cùng frontend; phiên bản giao diện hiện tại là 1.13.0.
+Banner trang Tổng quan dùng hình minh họa giao tiếp mới, màu sắc sống động và bố cục hiển thị ảnh trên cả máy tính/điện thoại. Tệp `public/illustrations/hero-conversation-vivid.png` được đóng gói cùng frontend; phiên bản giao diện hiện tại là 1.13.1.
 
 ## Mỗi bài có 20 câu giao tiếp
 
@@ -157,7 +157,7 @@ Nhập đáp án và nhấn **Kiểm tra đáp án** (hoặc Enter), xem phản 
 
 Kết thúc lượt chơi có điểm trên 5, nút **Chơi lại** với bộ câu được xáo lại và **Về thư viện**. Trò chơi có cho cả 39 bài. Bài học vẫn được lưu hoàn thành nếu người học rời trò chơi; điểm trò chơi chỉ hiển thị trong lượt chơi hiện tại, chưa lưu lịch sử điểm trên máy chủ. Không cần migration mới hoặc khóa API.
 
-Giao diện 1.13.0 dùng nền lavender–mint có họa tiết chấm, màu nhấn tím/hồng, thẻ viền nhẹ và bóng màu. Theme được đóng gói trong `theme.css`; giao diện có focus bàn phím và tôn trọng tùy chọn giảm chuyển động.
+Giao diện 1.13.1 dùng nền lavender–mint có họa tiết chấm, màu nhấn tím/hồng, thẻ viền nhẹ và bóng màu. Theme được đóng gói trong `theme.css`; giao diện có focus bàn phím và tôn trọng tùy chọn giảm chuyển động.
 
 ## Tiếng Anh theo lĩnh vực nghề nghiệp
 
@@ -176,21 +176,21 @@ Migration `008_professional_fields.sql` tạo 8 lĩnh vực; migration `009_six_
 
 Chọn **Lĩnh vực** trên trang Bài học hoặc Hội thoại. Bộ lọc Công việc bao gồm các lĩnh vực nghề nghiệp; Du lịch giữ các bài du lịch có sẵn. API `/api/catalog` trả `fields`, `fieldId` và `fieldTitle` để giao diện lọc trực tiếp dữ liệu từ PostgreSQL.
 
-Tổng nội dung hiện tại: **210 bài, 4200 câu giao tiếp, 606 từ vựng, 205 hội thoại** (4806 flashcards). Game cuối bài và phần nghe hội thoại tự dùng nội dung mới. Bối cảnh chuyên ngành phục vụ luyện ngôn ngữ, không thay thế tư vấn chuyên môn. Migration giữ nguyên nội dung và lịch sử học cũ, không cần biến môi trường mới. `npm start` tự cập nhật CSDL khi triển khai phiên bản **1.13.0**.
+Tổng nội dung hiện tại: **210 bài, 4200 câu giao tiếp, 606 từ vựng, 205 hội thoại** (4806 flashcards). Game cuối bài và phần nghe hội thoại tự dùng nội dung mới. Bối cảnh chuyên ngành phục vụ luyện ngôn ngữ, không thay thế tư vấn chuyên môn. Migration giữ nguyên nội dung và lịch sử học cũ, không cần biến môi trường mới. `npm start` tự cập nhật CSDL khi triển khai phiên bản **1.13.1**.
 
-Bản 1.13.0 tăng độ nổi bật của nền: gradient tím/hồng/mint/cam san hô, hình nền vector trang trí nguyên bản `playful-backdrop.svg`, các thẻ thống kê có màu riêng và nút nhấn tương phản. Vùng đọc vẫn dùng nền sáng.
+Bản 1.13.1 tăng độ nổi bật của nền: gradient tím/hồng/mint/cam san hô, hình nền vector trang trí nguyên bản `playful-backdrop.svg`, các thẻ thống kê có màu riêng và nút nhấn tương phản. Vùng đọc vẫn dùng nền sáng.
 
 Mỗi lĩnh vực chuyên ngành (CNTT, y tế, giáo dục, nhân sự, tài chính, logistics, khách sạn và marketing) có **6 bài khác nhau**, mỗi bài 20 câu và 3 từ vựng. Hai nhóm công việc/du lịch cũ giữ 17/22 bài. Migration 009 bổ sung 32 bài và 32 hội thoại, không xóa tiến độ cũ.
 
 **87 bài cũ có hình riêng theo tình huống**, lưu khóa ảnh/miêu tả trong PostgreSQL, trả về qua API và hiển thị ở danh sách, chi tiết bài, hội thoại. 15 bộ ảnh gốc được đóng gói trong Docker qua `public/illustrations`; mỗi bộ gồm 6 cảnh. Không cần dịch vụ ảnh ngoài hoặc biến môi trường mới.
 
-Phiên bản 1.13.0 đổi tên hiển thị thành **Tiếng Anh Hữu Ích**, gồm thanh bên, breadcrumb, tên học viên và tiêu đề tab trình duyệt.
+Phiên bản 1.13.1 đổi tên hiển thị thành **Tiếng Anh Hữu Ích**, gồm thanh bên, breadcrumb, tên học viên và tiêu đề tab trình duyệt.
 
-Giao diện 1.13.0 dùng nền anime nguyên bản `anime-sakura-background.png` và banner `anime-conversation-hero.png`, phối màu sakura/sky blue. Các vùng đọc giữ nền sáng; ảnh được đóng gói cùng frontend, không cần dịch vụ bên ngoài.
+Giao diện 1.13.1 dùng nền anime nguyên bản `anime-sakura-background.png` và banner `anime-conversation-hero.png`, phối màu sakura/sky blue. Các vùng đọc giữ nền sáng; ảnh được đóng gói cùng frontend, không cần dịch vụ bên ngoài.
 
-Bản 1.13.0 hiển thị bối cảnh luyện nghe song song Anh/Việt; sau khi trả lời, câu nghe cũng có bản dịch đối chiếu. Migration 010 bổ sung bản dịch viết sẵn cho 45 tình huống. Điện thoại xếp hai ngôn ngữ theo chiều dọc để dễ đọc.
+Bản 1.13.1 hiển thị bối cảnh luyện nghe song song Anh/Việt; sau khi trả lời, câu nghe cũng có bản dịch đối chiếu. Migration 010 bổ sung bản dịch viết sẵn cho 45 tình huống. Điện thoại xếp hai ngôn ngữ theo chiều dọc để dễ đọc.
 
-## Chat trực tiếp với website (1.13.0)
+## Chat trực tiếp với website (1.13.1)
 
 Đã bỏ liên kết, giao diện và tích hợp Gemini. **Chat luyện tiếng Anh** có ô nhập và nút **Send** ngay trong website: Enter gửi, Shift+Enter xuống dòng, hoặc dùng micro rồi gửi. Cuộc trò chuyện được tạo tự động khi gửi câu đầu và lưu vào PostgreSQL theo hồ sơ hiện có. Có lịch sử, cuộc trò chuyện mới, nghe phản hồi và bản dịch tùy chọn.
 
@@ -198,10 +198,12 @@ Website dùng **phản hồi tự động đơn giản theo chủ đề**, khôn
 
 Migration 013 đổi tên cuộc chat trống, giữ lịch sử cũ. Hồ sơ cookie HttpOnly chỉ đọc được lịch sử của mình. Giọng đọc/micro phụ thuộc trình duyệt; không chấm phát âm. Mỗi cuộc tối đa 20 lượt và có giới hạn tốc độ gửi để tránh gửi trùng liên tiếp.
 
-## Cấp độ học theo CEFR (1.13.0)
+## Cấp độ học theo CEFR (1.13.1)
 
 **Mỗi bậc A1, A2, B1, B2, C1, C2 có đúng 35 bài**, tổng 210 bài. Ba nhóm Cơ bản (A1/A2), Trung cấp (B1/B2), Nâng cao (C1/C2) đều đã có nội dung. Bộ lọc cấp độ kết hợp với lĩnh vực; danh sách sắp theo mức học và mã bài.
 
 Giữ 35 bài A2, 35 bài B1 và nội dung cũ. Bổ sung 29 bài A1, 24 bài B2, 35 bài C1, 35 bài C2. A1 tập trung hỏi đáp ngắn và đời sống; B2 trình bày quan điểm, lý do và lựa chọn; C1 lập luận, phản biện, nêu điều kiện; C2 hàm ý, sắc thái, nói giảm, mỉa mai và văn phong. Mức gợi ý phục vụ học, không phải chứng nhận hay bài thi CEFR.
 
 Bài mới có 20 câu, nghĩa tiếng Việt, IPA, 3 từ/cụm từ và hội thoại 8 lượt. Bốn bộ hình mới (`lesson-cefr-A1/B2/C1/C2.png`) gồm 24 cảnh giao tiếp, được gắn theo nhóm chủ đề; một cảnh có thể minh họa nhiều bài cùng nhóm. 87 bài cũ giữ ảnh và tiến độ. Không cần khóa API hoặc dịch vụ ngoài để mở bài.
+
+Phần Hội thoại → Luyện trả lời từng lượt có ô nhập và nút Gửi: Enter gửi, Shift+Enter xuống dòng. Câu gõ được lưu như câu nhận dạng từ micro và hiển thị thành bong bóng của người học trước khi chuyển lượt. Đây là luyện với kịch bản có sẵn, không có AI chấm điểm.

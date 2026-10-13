@@ -797,9 +797,9 @@ test("release diagnostics report real database counts and avoid caching the HTML
   const info = await fetch(origin + "/api/version");
   assert.equal(info.status, 200);
   assert.equal(info.headers.get("cache-control"), "no-store");
-  assert.equal(info.headers.get("x-ct-speak-version"), "1.13.0");
+  assert.equal(info.headers.get("x-ct-speak-version"), "1.13.1");
   const version = await info.json();
-  assert.equal(version.version, "1.13.0");
+  assert.equal(version.version, "1.13.1");
   assert.equal(version.lessons, 210);
   assert.equal(version.scenarios, 205);
   assert.equal(version.phrases, 4806);
@@ -809,7 +809,7 @@ test("release diagnostics report real database counts and avoid caching the HTML
     assert.equal(response.status, 200);
     assert.ok(response.headers.get("cache-control").includes("no-store"));
     if (path === "/app-version.json")
-      assert.equal((await response.json()).version, "1.13.0");
+      assert.equal((await response.json()).version, "1.13.1");
   }
 });
 
@@ -818,7 +818,7 @@ test("home and lesson library show illustrations and the visible release label",
   try {
     const document = dom.window.document;
     assert.ok(
-      document.querySelector(".sidebar-bottom").textContent.includes("1.13.0"),
+      document.querySelector(".sidebar-bottom").textContent.includes("1.13.1"),
     );
     assert.ok(!document.querySelector("nav").textContent.includes("YouTube"));
     const heroImage = document.querySelector(".hero-visual img");
@@ -1215,4 +1215,24 @@ test('new CEFR expansion adds distinct topics and genuine advanced language with
  }
  assert.equal(catalog.lessons.find(l=>l.id===101).level,'A1');
  assert.equal(catalog.lessons.find(l=>l.id===403).level,'B2');
+});
+
+test('guided dialogue accepts typed replies and saves them before advancing',async()=>{
+ const dom=await browser(cookie);
+ try{
+  const document=dom.window.document;click(dom,'Hội thoại');await waitFor(()=>document.querySelector('#roleplay-reply'));
+  document.querySelector('.guided-practice').open=true;
+  const input=document.querySelector('#roleplay-reply');
+  assert.equal(document.querySelector('.roleplay-reply button').disabled,true);
+  Object.getOwnPropertyDescriptor(dom.window.HTMLTextAreaElement.prototype,'value').set.call(input,'Good morning! Please take a seat.');
+  input.dispatchEvent(new dom.window.Event('input',{bubbles:true}));
+  await waitFor(()=>!document.querySelector('.roleplay-reply button').disabled);
+  document.querySelector('.roleplay-reply button').click();
+  await waitFor(()=>document.querySelector('.chat-header small').textContent.includes('2/4'));
+  assert.equal(document.querySelector('.chat.user').textContent,'Good morning! Please take a seat.');
+  assert.equal(input.value,'');
+  const sessions=(await request('/api/state')).body.sessions;
+  const detail=await request(`/api/sessions/${sessions[0].session_id}`);
+  assert.equal(detail.body.turns[0].user_speech_transcript,'Good morning! Please take a seat.');
+ }finally{dom.window.close();}
 });

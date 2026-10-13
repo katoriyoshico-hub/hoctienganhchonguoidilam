@@ -364,7 +364,7 @@ function App({ levels, fields, lessons, scenarios, listeningExercises, initialSt
       setFlipped(false);
       setCardIdx((i) => (i + 1) % all.length);
     });
-  const advance = () =>
+  const advance = (reply = heard) =>
     persist(async () => {
       let id = sessionId;
       if (!id) {
@@ -374,8 +374,9 @@ function App({ levels, fields, lessons, scenarios, listeningExercises, initialSt
       }
       await api(`/api/sessions/${id}/turns`, {
         turnIndex: turn,
-        transcript: heard,
+        transcript: reply,
       });
+      if (reply.trim()) setAnswers(a=>{const next=[...a];next[turn]=reply.trim();return next;});
       setHeard("");
       if (turn < scenario.lines.length - 1) setTurn((t) => t + 1);
       else {
@@ -950,6 +951,14 @@ function App({ levels, fields, lessons, scenarios, listeningExercises, initialSt
                           Math.min(turn, scenario.hints.length - 1)
                         ] || "Thank you very much!"}
                       </p>
+                      <form className="roleplay-reply" onSubmit={e=>{e.preventDefault();if(heard.trim()&&!saving&&!listening)advance(heard.trim());}}>
+                        <label htmlFor="roleplay-reply">Câu trả lời của bạn</label>
+                        <div className="roleplay-reply-row">
+                          <textarea id="roleplay-reply" rows={2} maxLength={1000} value={heard} onChange={e=>setHeard(e.target.value)} placeholder="Nhập câu trả lời bằng tiếng Anh…" onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.nativeEvent.isComposing){e.preventDefault();if(heard.trim()&&!saving&&!listening)e.currentTarget.form.requestSubmit();}}}/>
+                          <button type="submit" className="primary" disabled={!heard.trim()||saving||listening}>Gửi <ArrowRight size={16}/></button>
+                        </div>
+                        <small>Enter để gửi · Shift + Enter để xuống dòng. Gửi sẽ lưu câu trả lời và chuyển lượt tiếp theo.</small>
+                      </form>
                       <div className="practice-actions">
                         <button
                           className="outline"
@@ -961,7 +970,7 @@ function App({ levels, fields, lessons, scenarios, listeningExercises, initialSt
                           <Mic size={17} />
                           {listening ? "Đang nghe..." : "Nói câu trả lời"}
                         </button>
-                        <button className="primary" onClick={advance}>
+                        <button className="primary" onClick={() => advance()}>
                           {turn === scenario.lines.length - 1
                             ? "Luyện lại"
                             : "Tiếp tục"}{" "}
