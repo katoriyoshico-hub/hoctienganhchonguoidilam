@@ -19,7 +19,7 @@ import {
   Flame,
 } from "lucide-react";
 import "./style.css";
-import Conversation from "./Conversation.jsx";
+import Conversation, { SceneIllustration } from "./Conversation.jsx";
 async function api(path, body, method = "PUT") {
   const r = await fetch(path, {
     method,
@@ -400,7 +400,7 @@ function App({ lessons, scenarios, listeningExercises, initialState }) {
           <div className="avatar">CT</div>
           <div>
             <b>Học viên CT-Speak</b>
-            <small>Hành trình 60 ngày</small>
+            <small>Phiên bản {__APP_VERSION__}</small>
           </div>
         </div>
       </aside>
@@ -548,6 +548,39 @@ function App({ lessons, scenarios, listeningExercises, initialState }) {
                 </div>
               </>
             )}
+            {page === "home" && (
+              <section className="home-conversations">
+                <div className="section-head">
+                  <h2>Hội thoại có hình minh họa</h2>
+                  <span>{scenarios.length} tình huống</span>
+                </div>
+                <div className="conversation-previews">
+                  {[
+                    scenarios[0],
+                    scenarios.find((s) => s.illustrationKey === "city"),
+                    scenarios.find((s) => s.illustrationKey === "souvenir"),
+                  ]
+                    .filter(Boolean)
+                    .map((s) => (
+                      <button
+                        key={s.id}
+                        className="conversation-preview"
+                        onClick={() => {
+                          setScenario(s);
+                          setSessionId(null);
+                          setTurn(0);
+                          setAnswers([]);
+                          navigate("roleplay");
+                        }}
+                      >
+                        <SceneIllustration scenario={s} />
+                        <span>{s.title}</span>
+                        <small>Nghe hai nhân vật giao tiếp →</small>
+                      </button>
+                    ))}
+                </div>
+              </section>
+            )}
             {page === "lessons" && (
               <>
                 <div className="page-title">
@@ -581,6 +614,20 @@ function App({ lessons, scenarios, listeningExercises, initialState }) {
                         key={l.id}
                         onClick={() => openLesson(l)}
                       >
+                        <div className="lesson-card-art">
+                          <SceneIllustration
+                            scenario={
+                              scenarios.find(
+                                (s) =>
+                                  s.dialogue?.length && s.lessonId === l.id,
+                              ) || {
+                                illustrationKey:
+                                  l.cat === "work" ? "retail" : "city",
+                                title: l.title,
+                              }
+                            }
+                          />
+                        </div>
                         <div className={"lesson-icon " + l.cat}>
                           {l.cat === "work" ? <Briefcase /> : <Plane />}
                         </div>

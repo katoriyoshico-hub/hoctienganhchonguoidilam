@@ -148,28 +148,13 @@ export default function Conversation({ scenario }) {
     };
     next(0);
   };
-  const key = scenario.illustrationKey || "retail",
-    position = panels[key] || panels.retail;
-  const sheet = extras.has(key)
-    ? "additional-scenes.png"
-    : landmarks.has(key)
-      ? "landmark-scenes.png"
-      : "conversation-scenes.png";
   if (!dialogue.length) return <p>Hội thoại mẫu chưa sẵn sàng.</p>;
   return (
     <section
       className="conversation-player"
       aria-label="Hội thoại hai nhân vật"
     >
-      <div
-        className="conversation-illustration"
-        role="img"
-        aria-label={scenario.illustrationAlt || scenario.briefing}
-        style={{
-          backgroundImage: `url(/illustrations/${sheet})`,
-          backgroundPosition: `${position[0]}% ${position[1]}%`,
-        }}
-      />
+      <SceneIllustration scenario={scenario} />
       <div className="conversation-content">
         <div className="character-heading">
           <div>
@@ -278,5 +263,28 @@ export default function Conversation({ scenario }) {
         </p>
       </div>
     </section>
+  );
+}
+
+export function SceneIllustration({ scenario }) {
+  const key = scenario.illustrationKey || "retail",
+    position = panels[key] || panels.retail;
+  const sheet = extras.has(key)
+    ? "additional-scenes.png"
+    : landmarks.has(key)
+      ? "landmark-scenes.png"
+      : "conversation-scenes.png";
+  return (
+    <div
+      className="conversation-illustration"
+      role="img"
+      aria-label={
+        scenario.illustrationAlt || scenario.briefing || scenario.title
+      }
+      style={{
+        backgroundImage: `url(/illustrations/${sheet})`,
+        backgroundPosition: `${position[0]}% ${position[1]}%`,
+      }}
+    />
   );
 }
