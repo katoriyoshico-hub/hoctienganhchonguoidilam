@@ -428,9 +428,9 @@ function App({ lessons, scenarios, listeningExercises, initialState }) {
             {page === "home" && (
               <>
                 <section className="hero">
-                  <div>
+                  <div className="hero-copy">
                     <span className="eyebrow">
-                      ✨ LỘ TRÌNH 60 NGÀY · 15 PHÚT/NGÀY
+                      ✨ {lessons.length} BÀI HỌC · 15 PHÚT/NGÀY
                     </span>
                     <h1>
                       Tiếng Anh tự tin,
@@ -453,10 +453,22 @@ function App({ lessons, scenarios, listeningExercises, initialState }) {
                       Bắt đầu học ngay <ArrowRight size={17} />
                     </button>
                   </div>
-                  <div className="hero-art">
-                    <span>HELLO!</span>
-                    <div className="bubble">How can I help you?</div>
-                    <div className="orb">✦</div>
+                  <div className="hero-visual">
+                    <img
+                      src="/illustrations/hero-conversation-vivid.png"
+                      alt="Hai người bạn trò chuyện vui vẻ tại quán cà phê, cùng xem bản đồ du lịch dưới ánh nắng"
+                      width="1536"
+                      height="1024"
+                      fetchPriority="high"
+                    />
+                    <div className="hero-picture-label">
+                      <MessageCircle size={18} />
+                      <span>
+                        Tự tin trò chuyện
+                        <br />
+                        <strong>Kết nối với thế giới</strong>
+                      </span>
+                    </div>
                   </div>
                 </section>
                 <div className="stats">

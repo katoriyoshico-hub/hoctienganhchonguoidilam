@@ -128,12 +128,14 @@ Migration thêm dữ liệu và bảng `dialogue_lines`, không xóa bài học 
 
 ## Kiểm tra khi website vẫn hiện 8 bài hoặc giao diện cũ
 
-Bản 1.1.0 có nhãn **Phiên bản 1.1.0** ở chân thanh điều hướng, ảnh trên Tổng quan/thẻ Bài học và mục Luyện nghe từ vựng. HTML và API có header `Cache-Control: no-store`; asset JavaScript/CSS của Vite dùng tên theo nội dung. Ứng dụng không có service worker.
+Bản 1.1.1 có nhãn **Phiên bản 1.1.1** ở chân thanh điều hướng, ảnh trên Tổng quan/thẻ Bài học và mục Luyện nghe từ vựng. HTML và API có header `Cache-Control: no-store`; asset JavaScript/CSS của Vite dùng tên theo nội dung. Ứng dụng không có service worker.
 
 - `/app-version.json`: phiên bản frontend đã build.
 - `/api/version`: phiên bản backend, số bài/hội thoại/mẫu câu thực tế trong PostgreSQL và migration mới nhất; không trả về chuỗi kết nối hay biến môi trường.
 - Mọi phản hồi backend có header `X-CT-Speak-Version`.
 
-Với bản này, frontend/backend đều là `1.1.0`; CSDL phải có 39 bài, 34 hội thoại, 204 mẫu câu/từ vựng và migration `006_illustrated_conversations.sql`. Nếu website còn thiếu mục Luyện nghe từ vựng và hiện 8/8, giao diện được hiển thị là bản cũ. Nhật ký build đúng commit và HTTP 200 chưa chứng minh tên miền đang phục vụ đúng container.
+Với bản này, frontend/backend đều là `1.1.1`; CSDL phải có 39 bài, 34 hội thoại, 204 mẫu câu/từ vựng và migration `006_illustrated_conversations.sql`. Nếu website còn thiếu mục Luyện nghe từ vựng và hiện 8/8, giao diện được hiển thị là bản cũ. Nhật ký build đúng commit và HTTP 200 chưa chứng minh tên miền đang phục vụ đúng container.
 
 Sau khi triển khai, mở `/api/version` và `/app-version.json` để đối chiếu. Nếu vẫn trả về bản cũ hoặc không tồn tại mặc dù image mới đã LIVE, cần kiểm tra container thực tế mà Traefik đang định tuyến hoặc cache của nền tảng. Không xóa CSDL để xử lý lỗi frontend cũ.
+
+Banner trang Tổng quan dùng hình minh họa giao tiếp mới, màu sắc sống động và bố cục hiển thị ảnh trên cả máy tính/điện thoại. Tệp `public/illustrations/hero-conversation-vivid.png` được đóng gói cùng frontend; phiên bản giao diện hiện tại là 1.1.1.
