@@ -797,9 +797,9 @@ test("release diagnostics report real database counts and avoid caching the HTML
   const info = await fetch(origin + "/api/version");
   assert.equal(info.status, 200);
   assert.equal(info.headers.get("cache-control"), "no-store");
-  assert.equal(info.headers.get("x-ct-speak-version"), "1.7.0");
+  assert.equal(info.headers.get("x-ct-speak-version"), "1.7.1");
   const version = await info.json();
-  assert.equal(version.version, "1.7.0");
+  assert.equal(version.version, "1.7.1");
   assert.equal(version.lessons, 87);
   assert.equal(version.scenarios, 82);
   assert.equal(version.phrases, 1107);
@@ -809,7 +809,7 @@ test("release diagnostics report real database counts and avoid caching the HTML
     assert.equal(response.status, 200);
     assert.ok(response.headers.get("cache-control").includes("no-store"));
     if (path === "/app-version.json")
-      assert.equal((await response.json()).version, "1.7.0");
+      assert.equal((await response.json()).version, "1.7.1");
   }
 });
 
@@ -818,7 +818,7 @@ test("home and lesson library show illustrations and the visible release label",
   try {
     const document = dom.window.document;
     assert.ok(
-      document.querySelector(".sidebar-bottom").textContent.includes("1.7.0"),
+      document.querySelector(".sidebar-bottom").textContent.includes("1.7.1"),
     );
     const heroImage = document.querySelector(".hero-visual img");
     assert.ok(heroImage && heroImage.getAttribute("alt"));
@@ -1199,9 +1199,10 @@ test('AI page transcribes speech, submits chat, reads reply and reloads history'
  try{
   const document=dom.window.document;
   click(dom,'Luyện giao tiếp AI');
+  await waitFor(()=>document.querySelector('.ai-practice'));
+  click(dom,'Chat trong website');
   await waitFor(()=>document.querySelector('.ai-sidebar .primary')&&!document.querySelector('.ai-sidebar .primary').disabled);
-  click(dom,'Bắt đầu cuộc trò chuyện');
-  await waitFor(()=>!document.querySelector('#ai-draft').disabled);
+  assert.equal(document.querySelector('#ai-draft').disabled,false);
   click(dom,'Nói qua micro');
   await waitFor(()=>mic);
   assert.equal(mic.lang,'en-US');
@@ -1219,6 +1220,13 @@ test('AI page transcribes speech, submits chat, reads reply and reloads history'
   document.querySelector('.ai-history button').click();
   await waitFor(()=>document.querySelectorAll('.ai-message').length===2);
   assert.ok(document.querySelector('.ai-message.user').textContent.includes('I want help'));
+  click(dom,'Dùng Gemini trên Google');
+  await waitFor(()=>document.querySelector('.gemini-handoff'));
+  click(dom,'Chat trong website');
+  await waitFor(()=>document.querySelector('.ai-messages'));
+  assert.equal(document.querySelector('.ai-message'),null);
+  assert.equal(document.querySelector('[aria-label="Tình huống luyện AI"]').disabled,false);
+  assert.ok(document.querySelector('.ai-history button'));
  }finally{dom.window.close();await new Promise(resolve=>aiServer.close(resolve));}
 });
 
@@ -1239,4 +1247,32 @@ test('missing Gemini key, failed provider and daily quota never create fake repl
   assert.equal((await post(capped,`/api/ai/conversations/${id}/messages`,{message:'Hello again'})).status,429);
   assert.equal(calls,1);
  }finally{await Promise.all([missing,failing,capped].filter(Boolean).map(s=>new Promise(resolve=>s.close(resolve))));}
+});
+
+test('Gemini web mode allows typing and microphone without a key and copies a real handoff prompt',async()=>{
+ const dom=await browser(cookie);
+ let copied='',mic;
+ Object.defineProperty(dom.window.navigator,'clipboard',{value:{writeText:async text=>{copied=text;}}});
+ dom.window.SpeechRecognition=class{constructor(){mic=this;}start(){}stop(){this.onend?.();}abort(){this.onend?.();}};
+ try{
+  const document=dom.window.document;
+  click(dom,'Luyện giao tiếp AI');
+  await waitFor(()=>document.querySelector('.gemini-handoff'));
+  const draft=document.querySelector('#ai-draft');
+  assert.equal(draft.disabled,false);
+  Object.getOwnPropertyDescriptor(dom.window.HTMLTextAreaElement.prototype,'value').set.call(draft,'Good morning!');
+  draft.dispatchEvent(new dom.window.Event('input',{bubbles:true}));
+  await waitFor(()=>draft.value==='Good morning!');
+  click(dom,'Nói qua micro');await waitFor(()=>mic);
+  mic.onresult({results:[[{transcript:'I would like to make an appointment.'}]]});mic.onend();
+  await waitFor(()=>draft.value.includes('appointment'));
+  click(dom,'Sao chép tình huống');await waitFor(()=>copied.length>0);
+  assert.ok(copied.includes('Good morning! I would like to make an appointment.'));
+  assert.ok(copied.includes('Your role:'));
+  assert.ok(copied.includes('Vietnamese translation'));
+  const link=document.querySelector('.gemini-link');
+  assert.equal(link.href,'https://gemini.google.com/app');assert.equal(link.target,'_blank');assert.ok(link.rel.includes('noopener'));
+  assert.equal(document.querySelector('.ai-message'),null);
+  assert.ok(document.querySelector('[aria-label="Tình huống gửi sang Gemini"]').value.includes('appointment'));
+ }finally{dom.window.close();}
 });
