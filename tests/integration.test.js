@@ -2,6 +2,7 @@ import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
 import { once } from "node:events";
 import { createHash } from "node:crypto";
+import { makeLessonQuestions, normalizeAnswer } from "../lesson-game.js";
 import { readFile } from "node:fs/promises";
 import pg from "pg";
 import { JSDOM } from "jsdom";
@@ -282,6 +283,8 @@ test("built frontend loads API content and saves learning changes without localS
       );
     }
     click(dom, "Hoàn thành bài học");
+    await waitFor(() => document.querySelector(".lesson-game"));
+    click(dom, "Về thư viện");
     await waitFor(() => document.querySelector(".lesson-grid"));
     assert.ok((await request("/api/state")).body.done.includes(102));
     click(dom, "Flashcards");
@@ -804,9 +807,9 @@ test("release diagnostics report real database counts and avoid caching the HTML
   const info = await fetch(origin + "/api/version");
   assert.equal(info.status, 200);
   assert.equal(info.headers.get("cache-control"), "no-store");
-  assert.equal(info.headers.get("x-ct-speak-version"), "1.2.0");
+  assert.equal(info.headers.get("x-ct-speak-version"), "1.3.0");
   const version = await info.json();
-  assert.equal(version.version, "1.2.0");
+  assert.equal(version.version, "1.3.0");
   assert.equal(version.lessons, 39);
   assert.equal(version.scenarios, 34);
   assert.equal(version.phrases, 483);
@@ -816,7 +819,7 @@ test("release diagnostics report real database counts and avoid caching the HTML
     assert.equal(response.status, 200);
     assert.ok(response.headers.get("cache-control").includes("no-store"));
     if (path === "/app-version.json")
-      assert.equal((await response.json()).version, "1.2.0");
+      assert.equal((await response.json()).version, "1.3.0");
   }
 });
 
@@ -825,7 +828,7 @@ test("home and lesson library show illustrations and the visible release label",
   try {
     const document = dom.window.document;
     assert.ok(
-      document.querySelector(".sidebar-bottom").textContent.includes("1.2.0"),
+      document.querySelector(".sidebar-bottom").textContent.includes("1.3.0"),
     );
     const heroImage = document.querySelector(".hero-visual img");
     assert.ok(heroImage && heroImage.getAttribute("alt"));
@@ -885,4 +888,101 @@ test("all 39 lessons have ten sentences while vocabulary and existing review ind
     catalog.lessons.find((l) => l.id === 214).flashcards[3].p[0],
     "gift wrapping",
   );
+});
+
+test("lesson games select five unique learned sentences and normalize punctuation and contractions", async () => {
+  const { body: catalog } = await request("/api/catalog");
+  for (const lesson of catalog.lessons) {
+    const questions = makeLessonQuestions(lesson);
+    assert.equal(questions.length, 5);
+    assert.equal(new Set(questions.map((q) => q.english)).size, 5);
+    assert.deepEqual(
+      questions.map((q) => q.type),
+      ["blank", "rewrite", "blank", "rewrite", "blank"],
+    );
+    assert.ok(
+      questions.every((q) =>
+        lesson.phrases.some((p) => p[0] === q.english && p[1] === q.meaning),
+      ),
+    );
+    for (const q of questions.filter((q) => q.type === "blank"))
+      assert.equal(q.masked.replace("______", q.answer), q.english);
+  }
+  assert.equal(
+    normalizeAnswer("  HELLO,   WORLD! "),
+    normalizeAnswer("hello world"),
+  );
+  assert.equal(normalizeAnswer("I'm here."), normalizeAnswer("I am here"));
+  assert.equal(normalizeAnswer("café"), normalizeAnswer("cafe"));
+});
+
+test("end-of-lesson game grades typed answers, shows results and resets replay", async () => {
+  const { body: catalog } = await request("/api/catalog");
+  const lesson = catalog.lessons[0],
+    questions = makeLessonQuestions(lesson);
+  const dom = await browser(cookie);
+  try {
+    const document = dom.window.document;
+    click(dom, "Bài học");
+    await waitFor(() => document.querySelector(".lesson-card"));
+    document.querySelector(".lesson-card").click();
+    await waitFor(() => document.querySelector(".lesson-detail"));
+    for (let i = 1; i < 10; i++) {
+      click(dom, "Câu tiếp theo");
+      await waitFor(() =>
+        document
+          .querySelector(".lesson-footer span")
+          .textContent.trim()
+          .startsWith(`${i + 1} /`),
+      );
+    }
+    click(dom, "Hoàn thành bài học");
+    await waitFor(() => document.querySelector(".lesson-game"));
+    assert.ok((await request("/api/state")).body.done.includes(lesson.id));
+    assert.equal(
+      document.querySelector(".lesson-game form button").disabled,
+      true,
+    );
+    for (let i = 0; i < 5; i++) {
+      const input = document.querySelector("#game-answer");
+      Object.getOwnPropertyDescriptor(
+        dom.window.HTMLInputElement.prototype,
+        "value",
+      ).set.call(
+        input,
+        i === 0 ? "wrong-answer" : questions[i].answer.toUpperCase(),
+      );
+      input.dispatchEvent(new dom.window.Event("input", { bubbles: true }));
+      await waitFor(
+        () => !document.querySelector(".lesson-game form button").disabled,
+      );
+      document
+        .querySelector(".lesson-game form")
+        .dispatchEvent(
+          new dom.window.Event("submit", { bubbles: true, cancelable: true }),
+        );
+      await waitFor(() => document.querySelector(".game-feedback"));
+      assert.ok(
+        document
+          .querySelector(".game-feedback")
+          .textContent.includes(i === 0 ? "chưa khớp" : "Chính xác"),
+      );
+      assert.equal(document.querySelector("#game-answer").disabled, true);
+      click(dom, i === 4 ? "Xem kết quả" : "Câu tiếp theo");
+      await waitFor(() => !document.querySelector(".game-feedback"));
+    }
+    assert.ok(
+      document.querySelector(".game-score").textContent.includes("4/5"),
+    );
+    click(dom, "Chơi lại");
+    await waitFor(() => document.querySelector("#game-answer"));
+    assert.equal(document.querySelector("#game-answer").value, "");
+    assert.ok(
+      document.querySelector(".game-progress").textContent.includes("Đúng: 0"),
+    );
+    click(dom, "Về thư viện");
+    await waitFor(() => document.querySelector(".lesson-grid"));
+  } finally {
+    dom.window.close();
+  }
 });

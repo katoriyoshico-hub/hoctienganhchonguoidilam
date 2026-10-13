@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import "./style.css";
 import Conversation, { SceneIllustration } from "./Conversation.jsx";
+import LessonGame from "./LessonGame.jsx";
 async function api(path, body, method = "PUT") {
   const r = await fetch(path, {
     method,
@@ -335,7 +336,7 @@ function App({ lessons, scenarios, listeningExercises, initialState }) {
     persist(async () => {
       await api("/api/state/progress", { lessonId: active.id });
       setDone((a) => (a.includes(active.id) ? a : [...a, active.id]));
-      navigate("lessons");
+      navigate("game");
     });
   const review = (rating) =>
     persist(async () => {
@@ -763,6 +764,14 @@ function App({ lessons, scenarios, listeningExercises, initialState }) {
                   </div>
                 </div>
               </>
+            )}
+            {page === "game" && (
+              <LessonGame
+                key={active.id}
+                lesson={active}
+                speak={speak}
+                onClose={() => navigate("lessons")}
+              />
             )}
             {page === "listening" && (
               <ListeningPractice exercises={listeningExercises} speak={speak} />
