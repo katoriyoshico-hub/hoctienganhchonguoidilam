@@ -500,19 +500,21 @@ test("upgrading an existing database preserves previous lessons and learner prog
   }
 });
 
-test("listening API returns 45 contextual exercises linked to vocabulary", async () => {
+test("listening API covers all 606 vocabulary entries and retains the original exercises", async () => {
   const { body: catalog } = await request("/api/catalog");
-  assert.equal(catalog.listeningExercises.length, 45);
+  assert.equal(catalog.listeningExercises.length, 606);
+  assert.equal(catalog.listeningExercises.filter(e=>e.id<=45).length,45);
   assert.equal(
-    catalog.listeningExercises.filter((e) => e.cat === "work").length,
+    catalog.listeningExercises.filter((e) => e.cat === "work" && e.id<=45).length,
     15,
   );
   assert.equal(
-    catalog.listeningExercises.filter((e) => e.cat === "travel").length,
+    catalog.listeningExercises.filter((e) => e.cat === "travel" && e.id<=45).length,
     30,
   );
   for (const exercise of catalog.listeningExercises) {
     assert.ok(exercise.situationEn && exercise.spokenTranslation);
+    assert.ok(exercise.fieldId && exercise.fieldTitle && exercise.level);
     assert.ok(exercise.situation.startsWith("Giả sử"));
     assert.ok(
       exercise.spokenText.toLowerCase().includes(exercise.word.toLowerCase()),
@@ -587,20 +589,22 @@ test("listening quiz speaks the context, hides transcript, checks answers and re
     );
     click(dom, "Tình huống tiếp theo");
     await waitFor(() => !document.querySelector(".listening-feedback"));
-    assert.ok(document.body.textContent.includes("Câu 2/45"));
+    assert.ok(document.body.textContent.includes("Câu 2/606"));
     assert.ok(
       [...document.querySelectorAll(".listening-choices button")].every(
         (b) => b.disabled,
       ),
     );
-    click(dom, "Tham quan & quà lưu niệm");
-    await waitFor(() => document.body.textContent.includes("Câu 1/30"));
+    click(dom, "Du lịch & quà lưu niệm");
+    const travelCount=catalog.listeningExercises.filter(e=>e.fieldId===2).length;
+    await waitFor(() => document.body.textContent.includes(`Câu 1/${travelCount}`));
     assert.ok(document.body.textContent.includes("tháp Eiffel"));
-    click(dom, "Bán hàng");
-    await waitFor(() => document.body.textContent.includes("Câu 1/15"));
-    const exercises = catalog.listeningExercises.filter(
-      (e) => e.cat === "work",
-    );
+    click(dom, "Giao tiếp & bán hàng");
+    await waitFor(()=>[...document.querySelectorAll('[aria-label="Tình huống luyện nghe"] option')].some(o=>o.value==='105'));
+    const select=document.querySelector('[aria-label="Tình huống luyện nghe"]');
+    select.value='105';select.dispatchEvent(new dom.window.Event('change',{bubbles:true}));
+    await waitFor(() => document.body.textContent.includes("Câu 1/3"));
+    const exercises=catalog.listeningExercises.filter(e=>e.lessonId===105);
     for (let i = 0; i < exercises.length; i++) {
       click(dom, "Nghe tình huống");
       await waitFor(
@@ -623,7 +627,7 @@ test("listening quiz speaks the context, hides transcript, checks answers and re
       );
       await waitFor(() => !document.querySelector(".listening-feedback"));
     }
-    assert.ok(document.body.textContent.includes("15/15"));
+    assert.ok(document.body.textContent.includes("3/3"));
     click(dom, "Luyện lại chủ đề");
     await waitFor(() => document.querySelector(".listening-choices"));
     assert.ok(document.body.textContent.includes("Đúng 0/0"));
@@ -797,19 +801,19 @@ test("release diagnostics report real database counts and avoid caching the HTML
   const info = await fetch(origin + "/api/version");
   assert.equal(info.status, 200);
   assert.equal(info.headers.get("cache-control"), "no-store");
-  assert.equal(info.headers.get("x-ct-speak-version"), "1.13.1");
+  assert.equal(info.headers.get("x-ct-speak-version"), "1.14.0");
   const version = await info.json();
-  assert.equal(version.version, "1.13.1");
+  assert.equal(version.version, "1.14.0");
   assert.equal(version.lessons, 210);
   assert.equal(version.scenarios, 205);
   assert.equal(version.phrases, 4806);
-  assert.equal(version.migration, "016_thirty_five_lessons_per_level.sql");
+  assert.equal(version.migration, "017_listening_all_fields.sql");
   for (const path of ["/", "/index.html", "/app-version.json"]) {
     const response = await fetch(origin + path);
     assert.equal(response.status, 200);
     assert.ok(response.headers.get("cache-control").includes("no-store"));
     if (path === "/app-version.json")
-      assert.equal((await response.json()).version, "1.13.1");
+      assert.equal((await response.json()).version, "1.14.0");
   }
 });
 
@@ -818,7 +822,7 @@ test("home and lesson library show illustrations and the visible release label",
   try {
     const document = dom.window.document;
     assert.ok(
-      document.querySelector(".sidebar-bottom").textContent.includes("1.13.1"),
+      document.querySelector(".sidebar-bottom").textContent.includes("1.14.0"),
     );
     assert.ok(!document.querySelector("nav").textContent.includes("YouTube"));
     const heroImage = document.querySelector(".hero-visual img");
@@ -1234,5 +1238,28 @@ test('guided dialogue accepts typed replies and saves them before advancing',asy
   const sessions=(await request('/api/state')).body.sessions;
   const detail=await request(`/api/sessions/${sessions[0].session_id}`);
   assert.equal(detail.body.turns[0].user_speech_transcript,'Good morning! Please take a seat.');
+ }finally{dom.window.close();}
+});
+
+test('listening field and level filters expose new topics and allow recovery from an empty combination',async()=>{
+ const {body:catalog}=await request('/api/catalog');
+ assert.equal(new Set(catalog.listeningExercises.map(e=>e.fieldId)).size,10);
+ assert.equal(new Set(catalog.listeningExercises.map(e=>e.level)).size,6);
+ const dom=await browser(cookie);
+ try{
+  const document=dom.window.document;click(dom,'Luyện nghe từ vựng');await waitFor(()=>document.querySelector('.listening-topics'));
+  assert.equal(document.querySelectorAll('.listening-topics button').length,11);
+  click(dom,'Công nghệ & IT');await waitFor(()=>document.querySelector('.listening-level').textContent.includes('Công nghệ'));
+  const level=document.querySelector('[aria-label="Cấp độ luyện nghe"]');
+  level.value='A1';level.dispatchEvent(new dom.window.Event('change',{bubbles:true}));
+  await waitFor(()=>document.querySelector('.listening-practice .cefr-empty'));
+  assert.ok(document.querySelector('.listening-topics'));
+  level.value='C2';level.dispatchEvent(new dom.window.Event('change',{bubbles:true}));
+  await waitFor(()=>document.querySelector('.listening-level')?.textContent.includes('C2'));
+  const options=document.querySelectorAll('[aria-label="Tình huống luyện nghe"] option');
+  assert.equal(options.length,catalog.listeningExercises.filter(e=>e.fieldId===3&&e.level==='C2').length/3+1);
+  assert.equal(document.querySelectorAll('.listening-choices button').length,4);
+  assert.ok(document.querySelector('.listening-situation [lang="en"] p').textContent);
+  assert.ok(document.querySelector('.listening-situation [lang="vi"] p').textContent);
  }finally{dom.window.close();}
 });

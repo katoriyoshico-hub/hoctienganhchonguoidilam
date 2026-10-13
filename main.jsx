@@ -87,8 +87,10 @@ function Catalog() {
     />
   );
 }
-function ListeningPractice({ exercises, speak }) {
+function ListeningPractice({ exercises, speak, fields, levels }) {
   const [category, setCategory] = useState("all");
+  const [level,setLevel] = useState("all");
+  const [lessonId,setLessonId] = useState("all");
   const [index, setIndex] = useState(0);
   const [answer, setAnswer] = useState(null);
   const [played, setPlayed] = useState(false);
@@ -97,12 +99,15 @@ function ListeningPractice({ exercises, speak }) {
   const [finished, setFinished] = useState(false);
   useEffect(() => () => window.speechSynthesis?.cancel(), []);
   const filtered = exercises.filter(
-    (e) => category === "all" || e.cat === category,
+    (e) => (category === "all" || String(e.fieldId) === category) && (level==='all'||e.level===level) && (lessonId==='all'||String(e.lessonId)===lessonId),
   );
+  const availableLessons=[...new Map(exercises.filter(e=>(category==='all'||String(e.fieldId)===category)&&(level==='all'||e.level===level)).map(e=>[e.lessonId,e])).values()];
   const exercise = filtered[index];
-  const reset = (cat = category) => {
+  const reset = (cat = category, lvl=level, lesson=lessonId) => {
     window.speechSynthesis?.cancel();
     setCategory(cat);
+    setLevel(lvl);
+    setLessonId(lesson);
     setIndex(0);
     setAnswer(null);
     setPlayed(false);
@@ -110,26 +115,26 @@ function ListeningPractice({ exercises, speak }) {
     setCompleted(0);
     setFinished(false);
   };
-  if (!exercise)
-    return <p role="status">Chưa có bài luyện nghe trong chủ đề này.</p>;
-  const distractors = [...new Set(exercises.map((e) => e.meaning))]
-    .filter((m) => m !== exercise.meaning)
+  const relevant=exercises.filter(e=>e.fieldId===exercise?.fieldId&&e.level===exercise?.level);
+  const distractors = [...new Set([...relevant,...exercises].map((e) => e.meaning))]
+    .filter((m) => m !== exercise?.meaning)
     .slice(0, 3);
-  const choices = [exercise.meaning, ...distractors];
+  const choices = exercise ? [exercise.meaning, ...distractors] : [];
   // Stable shuffle avoids reshuffling answers during playback or feedback.
-  let seed = exercise.id * 7919;
+  let seed = (exercise?.id || 0) * 7919;
   for (let i = choices.length - 1; i > 0; i--) {
     seed = (seed * 1664525 + 1013904223) >>> 0;
     const j = seed % (i + 1);
     [choices[i], choices[j]] = [choices[j], choices[i]];
   }
   const play = (rate) => {
+    if(!exercise)return;
     const text = exercise.spokenText + " Key word: " + exercise.word + ".";
     speak(text, rate);
     if ("speechSynthesis" in window) setPlayed(true);
   };
   const choose = (meaning) => {
-    if (!played || answer !== null) return;
+    if (!exercise || !played || answer !== null) return;
     setAnswer(meaning);
     setCompleted((n) => n + 1);
     if (meaning === exercise.meaning) setCorrect((n) => n + 1);
@@ -141,22 +146,16 @@ function ListeningPractice({ exercises, speak }) {
         <h1>Luyện nghe từ vựng</h1>
         <p>Nghe câu và từ khóa, chọn nghĩa tiếng Việt rồi xem giải thích.</p>
       </div>
-      <div className="filters">
-        {[
-          ["all", "Tất cả"],
-          ["work", "Bán hàng"],
-          ["travel", "Tham quan & quà lưu niệm"],
-        ].map(([cat, label]) => (
-          <button
-            key={cat}
-            className={category === cat ? "active" : ""}
-            onClick={() => reset(cat)}
-          >
-            {label}
-          </button>
-        ))}
+      <div className="filters listening-topics" aria-label="Chủ đề luyện nghe">
+        <button className={category==='all'?'active':''} onClick={()=>reset('all',level,'all')}>Tất cả</button>
+        {fields.map(f=><button key={f.id} className={category===String(f.id)?'active':''} onClick={()=>reset(String(f.id),level,'all')}>{f.id===1?'Giao tiếp & bán hàng':f.id===2?'Du lịch & quà lưu niệm':f.title}</button>)}
       </div>
-      {finished ? (
+      <div className="listening-selectors">
+        <label>Cấp độ<select aria-label="Cấp độ luyện nghe" value={level} onChange={e=>reset(category,e.target.value,'all')}><option value="all">Tất cả cấp độ</option>{levels.map(l=><option key={l.code} value={l.code}>{l.code} · {l.title}</option>)}</select></label>
+        <label>Tình huống<select aria-label="Tình huống luyện nghe" value={lessonId} onChange={e=>reset(category,level,e.target.value)}><option value="all">Tất cả tình huống</option>{availableLessons.map(e=><option key={e.lessonId} value={e.lessonId}>{e.level} · {e.lessonTitle}</option>)}</select></label>
+      </div>
+      {!exercise ? <div className="cefr-empty" role="status">Chưa có tình huống luyện nghe phù hợp. Hãy chọn cấp độ khác hoặc Tất cả chủ đề.</div> : finished ? (
+
         <div className="lesson-detail" role="status">
           <h2>Hoàn thành lượt luyện nghe</h2>
           <p>
@@ -171,6 +170,7 @@ function ListeningPractice({ exercises, speak }) {
           <p>
             Câu {index + 1}/{filtered.length} · Đúng {correct}/{completed}
           </p>
+          <p className="listening-level">{exercise.level} · {exercise.fieldTitle}</p>
           <h2>{exercise.lessonTitle}</h2>
           <div className="listening-situation bilingual-listening">
             <div lang="en"><span className="bilingual-label">English</span><p>{exercise.situationEn}</p></div>
@@ -825,7 +825,7 @@ function App({ levels, fields, lessons, scenarios, listeningExercises, initialSt
               />
             )}
             {page === "listening" && (
-              <ListeningPractice exercises={listeningExercises} speak={speak} />
+              <ListeningPractice exercises={listeningExercises} speak={speak} fields={fields} levels={levels} />
             )}
             {page === "roleplay" && (
               <>
