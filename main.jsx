@@ -390,7 +390,7 @@ function App({ fields, lessons, scenarios, listeningExercises, initialState }) {
     ["lessons", BookOpen, "Bài học"],
     ["roleplay", MessageCircle, "Hội thoại"],
     ["listening", Volume2, "Luyện nghe từ vựng"],
-    ["ai", MessageCircle, "Luyện giao tiếp AI"],
+    ["ai", MessageCircle, "Chat luyện tiếng Anh"],
     ["progress", ChartNoAxesColumn, "Tiến độ"],
   ];
   return (
@@ -965,7 +965,7 @@ function App({ fields, lessons, scenarios, listeningExercises, initialState }) {
                 <div className="page-title">
                   <span className="eyebrow dark">ÔN TẬP NGẮT QUÃNG</span>
                   <h1>Flashcards</h1>
-                  <button className="outline" onClick={()=>navigate("ai")}>Quay lại luyện giao tiếp AI</button>
+                  <button className="outline" onClick={()=>navigate("ai")}>Quay lại chat luyện tiếng Anh</button>
                   <p>Chạm vào thẻ để xem nghĩa, sau đó chọn mức độ ghi nhớ.</p>
                 </div>
                 <div className="flash-count">

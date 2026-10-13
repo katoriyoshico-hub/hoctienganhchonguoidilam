@@ -288,7 +288,7 @@ test("built frontend loads API content and saves learning changes without localS
     click(dom, "Về thư viện");
     await waitFor(() => document.querySelector(".lesson-grid"));
     assert.ok((await request("/api/state")).body.done.includes(102));
-    click(dom, "Luyện giao tiếp AI");
+    click(dom, "Chat luyện tiếng Anh");
     await waitFor(()=>document.querySelector(".ai-practice"));
     click(dom, "Ôn tập Flashcards");
     await waitFor(() => document.querySelector(".flashcard"));
@@ -796,19 +796,19 @@ test("release diagnostics report real database counts and avoid caching the HTML
   const info = await fetch(origin + "/api/version");
   assert.equal(info.status, 200);
   assert.equal(info.headers.get("cache-control"), "no-store");
-  assert.equal(info.headers.get("x-ct-speak-version"), "1.9.0");
+  assert.equal(info.headers.get("x-ct-speak-version"), "1.10.0");
   const version = await info.json();
-  assert.equal(version.version, "1.9.0");
+  assert.equal(version.version, "1.10.0");
   assert.equal(version.lessons, 87);
   assert.equal(version.scenarios, 82);
   assert.equal(version.phrases, 1107);
-  assert.equal(version.migration, "012_freeform_ai_chat.sql");
+  assert.equal(version.migration, "013_website_chat.sql");
   for (const path of ["/", "/index.html", "/app-version.json"]) {
     const response = await fetch(origin + path);
     assert.equal(response.status, 200);
     assert.ok(response.headers.get("cache-control").includes("no-store"));
     if (path === "/app-version.json")
-      assert.equal((await response.json()).version, "1.9.0");
+      assert.equal((await response.json()).version, "1.10.0");
   }
 });
 
@@ -817,7 +817,7 @@ test("home and lesson library show illustrations and the visible release label",
   try {
     const document = dom.window.document;
     assert.ok(
-      document.querySelector(".sidebar-bottom").textContent.includes("1.9.0"),
+      document.querySelector(".sidebar-bottom").textContent.includes("1.10.0"),
     );
     assert.ok(!document.querySelector("nav").textContent.includes("YouTube"));
     const heroImage = document.querySelector(".hero-visual img");
@@ -1101,9 +1101,8 @@ test('AI page transcribes speech, submits chat, reads reply and reloads history'
  dom.window.SpeechRecognition=class {constructor(){mic=this;}start(){}stop(){this.onend?.();}abort(){this.onend?.();}};
  try{
   const document=dom.window.document;
-  click(dom,'Luyện giao tiếp AI');
+  click(dom,'Chat luyện tiếng Anh');
   await waitFor(()=>document.querySelector('.ai-practice'));
-  click(dom,'Chat trong website');
   await waitFor(()=>document.querySelector('.ai-sidebar .primary')&&!document.querySelector('.ai-sidebar .primary').disabled);
   assert.equal(document.querySelector('#ai-draft').disabled,false);
   click(dom,'Nói qua micro');
@@ -1112,7 +1111,7 @@ test('AI page transcribes speech, submits chat, reads reply and reloads history'
   mic.onresult({results:[[{transcript:'I want help'}]]});
   mic.onend();
   await waitFor(()=>document.querySelector('#ai-draft').value==='I want help');
-  await waitFor(()=>!document.querySelector('.ai-composer .primary').disabled);
+  await waitFor(()=>!document.querySelector('.ai-send').disabled);
   document.querySelector('.ai-composer').dispatchEvent(new dom.window.Event('submit',{bubbles:true,cancelable:true}));
   await waitFor(()=>document.querySelectorAll('.ai-message').length===2);
   assert.equal(spoken[0].text,'How can I help you today?');
@@ -1125,59 +1124,48 @@ test('AI page transcribes speech, submits chat, reads reply and reloads history'
   [...document.querySelectorAll('.ai-history button')].find(b=>b.textContent.includes('I want help')).click();
   await waitFor(()=>document.querySelectorAll('.ai-message').length===2);
   assert.ok(document.querySelector('.ai-message.user').textContent.includes('I want help'));
-  click(dom,'Dùng Gemini trên Google');
-  await waitFor(()=>document.querySelector('.gemini-handoff'));
-  click(dom,'Chat trong website');
-  await waitFor(()=>document.querySelector('.ai-messages'));
-  assert.equal(document.querySelector('.ai-message'),null);
-  assert.equal(document.querySelector('[aria-label="Tình huống luyện AI"]'),null);
-  assert.ok(document.querySelector('.ai-history button'));
  }finally{dom.window.close();await new Promise(resolve=>aiServer.close(resolve));}
 });
 
-test('missing Gemini key, failed provider and daily quota never create fake replies',async()=>{
- let calls=0;
- const missing=createApp(pool,{aiConfig:{configured:false,provider:'gemini'}}).listen(0,'127.0.0.1');
- const failing=createApp(pool,{aiProvider:async()=>{calls++;throw new AIError('Dịch vụ AI đang giới hạn.',429);}}).listen(0,'127.0.0.1');
- await Promise.all([once(missing,'listening'),once(failing,'listening')]);
- const post=async(server,path,body)=>{const r=await fetch(`http://127.0.0.1:${server.address().port}`+path,{method:'POST',headers:{'Content-Type':'application/json',Cookie:cookie},body:JSON.stringify(body)});return {status:r.status,body:await r.json()};};
- let capped;
+test('Send posts chat to the website without Gemini or any API key',async()=>{
+ const profile=await fetch(origin+'/api/state');const identity=profile.headers.get('set-cookie').split(';')[0];
+ const dom=await browser(identity);
  try{
-  assert.equal((await post(missing,'/api/ai/conversations',{})).status,503);
-  const created=await post(failing,'/api/ai/conversations',{});const id=created.body.id;
-  assert.equal((await post(failing,`/api/ai/conversations/${id}/messages`,{message:'Hello'})).status,429);
-  assert.equal((await pool.query('SELECT * FROM ai_messages WHERE conversation_id=$1',[id])).rows.length,0);
-  const count=(await pool.query('SELECT requests FROM ai_daily_usage WHERE usage_day=CURRENT_DATE')).rows[0].requests;
-  capped=createApp(pool,{aiDailyLimit:count,aiProvider:async()=>{calls++;return {};}}).listen(0,'127.0.0.1');await once(capped,'listening');
-  assert.equal((await post(capped,`/api/ai/conversations/${id}/messages`,{message:'Hello again'})).status,429);
-  assert.equal(calls,1);
- }finally{await Promise.all([missing,failing,capped].filter(Boolean).map(s=>new Promise(resolve=>s.close(resolve))));}
+  const document=dom.window.document;click(dom,'Chat luyện tiếng Anh');
+  await waitFor(()=>document.querySelector('.ai-send'));
+  assert.ok(!document.querySelector('.ai-practice').textContent.includes('Gemini'));
+  const input=document.querySelector('#ai-draft');assert.equal(input.disabled,false);
+  Object.getOwnPropertyDescriptor(dom.window.HTMLTextAreaElement.prototype,'value').set.call(input,'Hi');
+  input.dispatchEvent(new dom.window.Event('input',{bubbles:true}));
+  await waitFor(()=>!document.querySelector('.ai-send').disabled);
+  document.querySelector('.ai-auto-speak input').click();
+  document.querySelector('.ai-send').click();
+  await waitFor(()=>document.querySelectorAll('.ai-message').length===2);
+  assert.equal(document.querySelector('.ai-message.user p').textContent,'Hi');
+  assert.ok(document.querySelector('.ai-message.assistant p').textContent.includes('How is your day'));
+  await waitFor(()=>!document.querySelector('.ai-sidebar .primary').disabled);
+  const list=await request('/api/ai/conversations',undefined,'GET',identity);const id=list.body[0].id;
+  const stored=await request(`/api/ai/conversations/${id}`,undefined,'GET',identity);
+  assert.equal(stored.body.messages.length,2);
+  assert.equal(stored.body.messages[0].content,'Hi');
+ }finally{dom.window.close();}
 });
 
-test('Gemini web mode allows typing and microphone without a key and copies a real handoff prompt',async()=>{
- const dom=await browser(cookie);
- let copied='',mic;
- Object.defineProperty(dom.window.navigator,'clipboard',{value:{writeText:async text=>{copied=text;}}});
- dom.window.SpeechRecognition=class{constructor(){mic=this;}start(){}stop(){this.onend?.();}abort(){this.onend?.();}};
+test('Enter sends chat while Shift Enter keeps composing',async()=>{
+ const profile=await fetch(origin+'/api/state');const identity=profile.headers.get('set-cookie').split(';')[0];
+ const dom=await browser(identity);
  try{
-  const document=dom.window.document;
-  click(dom,'Luyện giao tiếp AI');
-  await waitFor(()=>document.querySelector('.gemini-handoff'));
-  const draft=document.querySelector('#ai-draft');
-  assert.equal(draft.disabled,false);
-  Object.getOwnPropertyDescriptor(dom.window.HTMLTextAreaElement.prototype,'value').set.call(draft,'Good morning!');
-  draft.dispatchEvent(new dom.window.Event('input',{bubbles:true}));
-  await waitFor(()=>draft.value==='Good morning!');
-  click(dom,'Nói qua micro');await waitFor(()=>mic);
-  mic.onresult({results:[[{transcript:'I would like to make an appointment.'}]]});mic.onend();
-  await waitFor(()=>draft.value.includes('appointment'));
-  click(dom,'Sao chép lời mở đầu');await waitFor(()=>copied.length>0);
-  assert.ok(copied.includes('Good morning! I would like to make an appointment.'));
-  assert.ok(copied.includes('No role-play'));
-  assert.ok(copied.includes('Vietnamese translation'));
-  const link=document.querySelector('.gemini-link');
-  assert.equal(link.href,'https://gemini.google.com/app');assert.equal(link.target,'_blank');assert.ok(link.rel.includes('noopener'));
-  assert.equal(document.querySelector('.ai-message'),null);
-  assert.ok(document.querySelector('[aria-label="Lời mở đầu gửi sang Gemini"]').value.includes('appointment'));
+  const document=dom.window.document;click(dom,'Chat luyện tiếng Anh');
+  await waitFor(()=>document.querySelector('#ai-draft'));
+  const input=document.querySelector('#ai-draft');
+  Object.getOwnPropertyDescriptor(dom.window.HTMLTextAreaElement.prototype,'value').set.call(input,'Hello');
+  input.dispatchEvent(new dom.window.Event('input',{bubbles:true}));
+  await waitFor(()=>!document.querySelector('.ai-send').disabled);
+  document.querySelector('.ai-auto-speak input').click();
+  const newline=new dom.window.KeyboardEvent('keydown',{key:'Enter',shiftKey:true,bubbles:true,cancelable:true});input.dispatchEvent(newline);
+  assert.equal(newline.defaultPrevented,false);assert.equal(document.querySelector('.ai-message'),null);
+  input.dispatchEvent(new dom.window.KeyboardEvent('keydown',{key:'Enter',bubbles:true,cancelable:true}));
+  await waitFor(()=>document.querySelectorAll('.ai-message').length===2);
+  assert.equal(document.querySelector('.ai-message.user p').textContent,'Hello');
  }finally{dom.window.close();}
 });

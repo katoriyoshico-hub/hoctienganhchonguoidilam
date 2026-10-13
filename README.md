@@ -128,17 +128,17 @@ Migration thêm dữ liệu và bảng `dialogue_lines`, không xóa bài học 
 
 ## Kiểm tra khi website vẫn hiện 8 bài hoặc giao diện cũ
 
-Bản 1.9.0 có nhãn **Phiên bản 1.9.0** ở chân thanh điều hướng, ảnh trên Tổng quan/thẻ Bài học và mục Luyện nghe từ vựng. HTML và API có header `Cache-Control: no-store`; asset JavaScript/CSS của Vite dùng tên theo nội dung. Ứng dụng không có service worker.
+Bản 1.10.0 có nhãn **Phiên bản 1.10.0** ở chân thanh điều hướng, ảnh trên Tổng quan/thẻ Bài học và mục Luyện nghe từ vựng. HTML và API có header `Cache-Control: no-store`; asset JavaScript/CSS của Vite dùng tên theo nội dung. Ứng dụng không có service worker.
 
 - `/app-version.json`: phiên bản frontend đã build.
 - `/api/version`: phiên bản backend, số bài/hội thoại/mẫu câu thực tế trong PostgreSQL và migration mới nhất; không trả về chuỗi kết nối hay biến môi trường.
 - Mọi phản hồi backend có header `X-CT-Speak-Version`.
 
-Với bản này, frontend/backend đều là `1.9.0`; CSDL phải có 87 bài, 82 hội thoại, 1107 mẫu câu/từ vựng và migration `012_freeform_ai_chat.sql`. Nếu website còn thiếu mục Luyện nghe từ vựng và hiện 8/8, giao diện được hiển thị là bản cũ. Nhật ký build đúng commit và HTTP 200 chưa chứng minh tên miền đang phục vụ đúng container.
+Với bản này, frontend/backend đều là `1.10.0`; CSDL phải có 87 bài, 82 hội thoại, 1107 mẫu câu/từ vựng và migration `013_website_chat.sql`. Nếu website còn thiếu mục Luyện nghe từ vựng và hiện 8/8, giao diện được hiển thị là bản cũ. Nhật ký build đúng commit và HTTP 200 chưa chứng minh tên miền đang phục vụ đúng container.
 
 Sau khi triển khai, mở `/api/version` và `/app-version.json` để đối chiếu. Nếu vẫn trả về bản cũ hoặc không tồn tại mặc dù image mới đã LIVE, cần kiểm tra container thực tế mà Traefik đang định tuyến hoặc cache của nền tảng. Không xóa CSDL để xử lý lỗi frontend cũ.
 
-Banner trang Tổng quan dùng hình minh họa giao tiếp mới, màu sắc sống động và bố cục hiển thị ảnh trên cả máy tính/điện thoại. Tệp `public/illustrations/hero-conversation-vivid.png` được đóng gói cùng frontend; phiên bản giao diện hiện tại là 1.9.0.
+Banner trang Tổng quan dùng hình minh họa giao tiếp mới, màu sắc sống động và bố cục hiển thị ảnh trên cả máy tính/điện thoại. Tệp `public/illustrations/hero-conversation-vivid.png` được đóng gói cùng frontend; phiên bản giao diện hiện tại là 1.10.0.
 
 ## Mỗi bài có 10 câu giao tiếp
 
@@ -146,7 +146,7 @@ Migration `007_ten_sentences_per_lesson.sql` bổ sung 279 câu theo từng tìn
 
 Flashcards có đủ 390 câu và 93 từ vựng, tổng 483 thẻ. API trả `phrases` cho 10 câu thực hành, `vocabulary` cho từ vựng và `flashcards` kèm `phraseIndex` ổn định. Các câu mới được thêm sau mã câu/từ cũ; không thay đổi ID, thứ tự thẻ cũ trong từng bài, tiến độ hoàn thành hay lịch ôn đã lưu. Bài đã hoàn thành không tự bị đánh dấu chưa hoàn thành; người học có thể mở lại để luyện các câu mới.
 
-Phiên bản hiện tại: **1.9.0**. Triển khai lại từ `main`; `npm start` tự chạy migration mới. Không cần xóa hoặc seed lại CSDL.
+Phiên bản hiện tại: **1.10.0**. Triển khai lại từ `main`; `npm start` tự chạy migration mới. Không cần xóa hoặc seed lại CSDL.
 
 ## Trò chơi sau mỗi bài học
 
@@ -159,7 +159,7 @@ Nhập đáp án và nhấn **Kiểm tra đáp án** (hoặc Enter), xem phản 
 
 Kết thúc lượt chơi có điểm trên 5, nút **Chơi lại** với bộ câu được xáo lại và **Về thư viện**. Trò chơi có cho cả 39 bài. Bài học vẫn được lưu hoàn thành nếu người học rời trò chơi; điểm trò chơi chỉ hiển thị trong lượt chơi hiện tại, chưa lưu lịch sử điểm trên máy chủ. Không cần migration mới hoặc khóa API.
 
-Giao diện 1.9.0 dùng nền lavender–mint có họa tiết chấm, màu nhấn tím/hồng, thẻ viền nhẹ và bóng màu. Theme được đóng gói trong `theme.css`; giao diện có focus bàn phím và tôn trọng tùy chọn giảm chuyển động.
+Giao diện 1.10.0 dùng nền lavender–mint có họa tiết chấm, màu nhấn tím/hồng, thẻ viền nhẹ và bóng màu. Theme được đóng gói trong `theme.css`; giao diện có focus bàn phím và tôn trọng tùy chọn giảm chuyển động.
 
 ## Tiếng Anh theo lĩnh vực nghề nghiệp
 
@@ -178,24 +178,24 @@ Migration `008_professional_fields.sql` tạo 8 lĩnh vực; migration `009_six_
 
 Chọn **Lĩnh vực** trên trang Bài học hoặc Hội thoại. Bộ lọc Công việc bao gồm các lĩnh vực nghề nghiệp; Du lịch giữ các bài du lịch có sẵn. API `/api/catalog` trả `fields`, `fieldId` và `fieldTitle` để giao diện lọc trực tiếp dữ liệu từ PostgreSQL.
 
-Tổng nội dung hiện tại: **87 bài, 870 câu giao tiếp, 237 từ vựng, 82 hội thoại** (1107 flashcards). Game cuối bài và phần nghe hội thoại tự dùng nội dung mới. Bối cảnh chuyên ngành phục vụ luyện ngôn ngữ, không thay thế tư vấn chuyên môn. Migration giữ nguyên nội dung và lịch sử học cũ, không cần biến môi trường mới. `npm start` tự cập nhật CSDL khi triển khai phiên bản **1.9.0**.
+Tổng nội dung hiện tại: **87 bài, 870 câu giao tiếp, 237 từ vựng, 82 hội thoại** (1107 flashcards). Game cuối bài và phần nghe hội thoại tự dùng nội dung mới. Bối cảnh chuyên ngành phục vụ luyện ngôn ngữ, không thay thế tư vấn chuyên môn. Migration giữ nguyên nội dung và lịch sử học cũ, không cần biến môi trường mới. `npm start` tự cập nhật CSDL khi triển khai phiên bản **1.10.0**.
 
-Bản 1.9.0 tăng độ nổi bật của nền: gradient tím/hồng/mint/cam san hô, hình nền vector trang trí nguyên bản `playful-backdrop.svg`, các thẻ thống kê có màu riêng và nút nhấn tương phản. Vùng đọc vẫn dùng nền sáng.
+Bản 1.10.0 tăng độ nổi bật của nền: gradient tím/hồng/mint/cam san hô, hình nền vector trang trí nguyên bản `playful-backdrop.svg`, các thẻ thống kê có màu riêng và nút nhấn tương phản. Vùng đọc vẫn dùng nền sáng.
 
 Mỗi lĩnh vực chuyên ngành (CNTT, y tế, giáo dục, nhân sự, tài chính, logistics, khách sạn và marketing) có **6 bài khác nhau**, mỗi bài 10 câu và 3 từ vựng. Hai nhóm công việc/du lịch cũ giữ 17/22 bài. Migration 009 bổ sung 32 bài và 32 hội thoại, không xóa tiến độ cũ.
 
 Toàn bộ **87 bài có hình riêng theo tình huống**, lưu khóa ảnh/miêu tả trong PostgreSQL, trả về qua API và hiển thị ở danh sách, chi tiết bài, hội thoại. 15 bộ ảnh mới được đóng gói trong Docker qua `public/illustrations`; mỗi bộ gồm 6 cảnh. Không cần dịch vụ ảnh ngoài hoặc biến môi trường mới.
 
-Phiên bản 1.9.0 đổi tên hiển thị thành **Tiếng Anh Hữu Ích**, gồm thanh bên, breadcrumb, tên học viên và tiêu đề tab trình duyệt.
+Phiên bản 1.10.0 đổi tên hiển thị thành **Tiếng Anh Hữu Ích**, gồm thanh bên, breadcrumb, tên học viên và tiêu đề tab trình duyệt.
 
-Giao diện 1.9.0 dùng nền anime nguyên bản `anime-sakura-background.png` và banner `anime-conversation-hero.png`, phối màu sakura/sky blue. Các vùng đọc giữ nền sáng; ảnh được đóng gói cùng frontend, không cần dịch vụ bên ngoài.
+Giao diện 1.10.0 dùng nền anime nguyên bản `anime-sakura-background.png` và banner `anime-conversation-hero.png`, phối màu sakura/sky blue. Các vùng đọc giữ nền sáng; ảnh được đóng gói cùng frontend, không cần dịch vụ bên ngoài.
 
-Bản 1.9.0 hiển thị bối cảnh luyện nghe song song Anh/Việt; sau khi trả lời, câu nghe cũng có bản dịch đối chiếu. Migration 010 bổ sung bản dịch viết sẵn cho 45 tình huống. Điện thoại xếp hai ngôn ngữ theo chiều dọc để dễ đọc.
+Bản 1.10.0 hiển thị bối cảnh luyện nghe song song Anh/Việt; sau khi trả lời, câu nghe cũng có bản dịch đối chiếu. Migration 010 bổ sung bản dịch viết sẵn cho 45 tình huống. Điện thoại xếp hai ngôn ngữ theo chiều dọc để dễ đọc.
 
-## Trò chuyện tự do với Gemini (1.9.0)
+## Chat trực tiếp với website (1.10.0)
 
-Đã gỡ tính năng YouTube → Văn bản và các API liên quan. Luyện AI chuyển thành tán gẫu tiếng Anh, không chọn lĩnh vực, hoàn cảnh hay đóng vai. Nhập hoặc nói một câu bất kỳ để bắt đầu; Gemini trả lời theo cuộc trò chuyện, giữ ngữ cảnh lịch sử. Bản dịch và gợi ý học nằm trong phần mở rộng, có giọng đọc tự động tùy chọn.
+Đã bỏ liên kết, giao diện và tích hợp Gemini. **Chat luyện tiếng Anh** có ô nhập và nút **Send** ngay trong website: Enter gửi, Shift+Enter xuống dòng, hoặc dùng micro rồi gửi. Cuộc trò chuyện được tạo tự động khi gửi câu đầu và lưu vào PostgreSQL theo hồ sơ hiện có. Có lịch sử, cuộc trò chuyện mới, nghe phản hồi và bản dịch tùy chọn.
 
-Chat ngay trong website cần `GEMINI_API_KEY` đặt trong Biến môi trường Vibehost, lưu và triển khai lại. `GEMINI_MODEL` mặc định `gemini-2.5-flash`; `AI_DAILY_MESSAGE_LIMIT` mặc định 200 lượt/ngày toàn website. Không đưa khóa lên GitHub hoặc dùng biến `VITE_`. Nếu chưa có khóa, chế độ Gemini trên Google cho sao chép lời mở đầu và mở `https://gemini.google.com/app`, dán rồi trò chuyện ở đó; không tự chuyển câu trả lời/lịch sử từ Google về website.
+Website dùng **phản hồi tự động đơn giản theo chủ đề**, không phải AI sinh văn bản. Hỗ trợ lời chào, tâm trạng, công việc, sở thích, đồ ăn, du lịch, thời tiết và lời cảm ơn/tạm biệt; vài gợi ý diễn đạt được lập trình sẵn. Câu ngắn tiếp theo có thể nối tiếp chủ đề trước. Nội dung ngoài phạm vi nhận diện có thể nhận phản hồi chung. Không cần API key, không gọi dịch vụ Gemini hoặc dịch vụ chat ngoài.
 
-Migration 012 cho phép cuộc trò chuyện không gắn kịch bản, đặt tiêu đề từ tin nhắn đầu và giữ nguyên lịch sử cũ. Mỗi cuộc tối đa 20 lượt; hồ sơ cookie HttpOnly chỉ đọc lịch sử của mình. Ô nhập/micro không yêu cầu chọn hoàn cảnh. Micro chuyển lời nói thành chữ để bạn xem và gửi; AI không chấm phát âm. Kiểm thử dùng Gemini giả lập; chưa xác minh API thật vì môi trường chưa có khóa.
+Migration 013 đổi tên cuộc chat trống, giữ lịch sử cũ. Hồ sơ cookie HttpOnly chỉ đọc được lịch sử của mình. Giọng đọc/micro phụ thuộc trình duyệt; không chấm phát âm. Mỗi cuộc tối đa 20 lượt và có giới hạn tốc độ gửi để tránh gửi trùng liên tiếp.

@@ -1,33 +1,21 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {aiConfiguration,generateAIReply,parseAIReply} from '../server/ai.js';
-const reply={reply:'Could you tell me your budget?',translation:'Bạn cho tôi biết ngân sách nhé?',correction:'I would like a gift.',tip:'Dùng would like để yêu cầu lịch sự.'};
-const config={configured:true,provider:'gemini',key:'test-key',model:'gemini-2.5-flash'};
-test('Gemini configuration needs a server key and structured replies reject invalid content',()=>{
- assert.equal(aiConfiguration({}).configured,false);
- assert.equal(aiConfiguration({GEMINI_API_KEY:'test'}).model,'gemini-2.5-flash');
- assert.deepEqual(parseAIReply(JSON.stringify(reply)),reply);
- assert.throws(()=>parseAIReply('plain text'));
- assert.throws(()=>parseAIReply(JSON.stringify({...reply,reply:''})));
+import {localChatReply} from '../server/local-chat.js';
+import {parseAIReply} from '../server/ai.js';
+test('website replies to greetings and common topics without an API key',()=>{
+ assert.ok(localChatReply({message:'Hi'}).reply.includes('How is your day'));
+ assert.ok(localChatReply({message:'I like coffee'}).reply.includes('food or drink'));
+ assert.ok(localChatReply({message:'Tôi thích du lịch'}).reply.includes('next trip'));
+ assert.ok(localChatReply({message:'Who are you?'}).reply.includes('automatic'));
+ assert.ok(localChatReply({message:'Something unfamiliar'}).reply.length>0);
 });
-test('Gemini adapter sends contextual conversation and returns bilingual corrections',async()=>{
- let call;
- const actual=await generateAIReply({scenario:{title:'Buying a gift',context_briefing:'In a shop',ai_role_name:'Seller',user_role_name:'Buyer'},history:[{role:'user',content:'Hello'},{role:'assistant',content:'Welcome!'}],message:'I want gift'},{config,fetchImpl:async(url,options)=>{
- call={url,options};return new Response(JSON.stringify({candidates:[{content:{parts:[{text:JSON.stringify(reply)}]}}]}));
- }});
- assert.deepEqual(actual,reply);
- assert.ok(call.url.includes('gemini-2.5-flash:generateContent'));
- assert.equal(call.options.headers['x-goog-api-key'],'test-key');
- const body=JSON.parse(call.options.body);
- assert.ok(body.systemInstruction.parts[0].text.includes('without assigned roles'));
- assert.ok(!body.systemInstruction.parts[0].text.includes('Seller'));
- assert.equal(body.contents[1].role,'model');
- assert.equal(body.contents[2].parts[0].text,'I want gift');
- assert.equal(body.generationConfig.responseMimeType,'application/json');
+test('short followups use the previous topic and supported corrections are specific',()=>{
+ const result=localChatReply({message:'Yes',history:[{role:'user',content:'I like cooking'},{role:'assistant',content:'Food?'}]});
+ assert.ok(result.reply.includes('cooking'));
+ assert.equal(localChatReply({message:'I am agree'}).correction,'I agree.');
+ assert.equal(localChatReply({message:'I feel happy'}).correction,'');
 });
-test('Gemini missing key, quota and invalid upstream output return clear errors',async()=>{
- await assert.rejects(generateAIReply({},{config:{configured:false}}),e=>e.status===503);
- const args={scenario:{},history:[],message:'Hello'};
- await assert.rejects(generateAIReply(args,{config,fetchImpl:async()=>new Response('',{status:429})}),e=>e.status===429);
- await assert.rejects(generateAIReply(args,{config,fetchImpl:async()=>new Response(JSON.stringify({candidates:[{content:{parts:[{text:'invented invalid format'}]}}]}))}),e=>e.status===502);
+test('stored automated replies must contain real text and a translation',()=>{
+ assert.deepEqual(parseAIReply(JSON.stringify(localChatReply({message:'Hello'}))),localChatReply({message:'Hello'}));
+ assert.throws(()=>parseAIReply('not json'));
 });
