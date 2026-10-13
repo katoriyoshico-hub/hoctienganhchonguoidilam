@@ -268,11 +268,16 @@ export default function Conversation({ scenario }) {
 
 export function SceneIllustration({ scenario }) {
   const key = scenario.illustrationKey || "retail";
+  const cefrMatch = /^cefr-(A1|B2|C1|C2)-([0-5])$/.exec(key);
   const match = /^(field-(?:[3-9]|10)|legacy-[0-6])-([0-5])$/.exec(key);
-  const position = match
+  const position = cefrMatch
+    ? [(Number(cefrMatch[2]) % 3) * 50, Math.floor(Number(cefrMatch[2]) / 3) * 100]
+    : match
     ? [(Number(match[2]) % 3) * 50, Math.floor(Number(match[2]) / 3) * 100]
     : panels[key] || panels.retail;
-  const sheet = match
+  const sheet = cefrMatch
+    ? `lesson-cefr-${cefrMatch[1]}.png`
+    : match
     ? `lesson-${match[1]}.png`
     : extras.has(key) ? "additional-scenes.png"
     : landmarks.has(key) ? "landmark-scenes.png"

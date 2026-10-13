@@ -53,7 +53,7 @@ test("deployment starts on an empty database and restarts without reseeding", as
       `http://127.0.0.1:${restarted.address().port}/api/catalog`,
     );
     assert.equal(response.status, 200);
-    assert.equal((await response.json()).lessons.length, 87);
+    assert.equal((await response.json()).lessons.length, 210);
   } finally {
     await new Promise((resolve) => restarted.close(resolve));
   }
@@ -99,9 +99,9 @@ test("all ten PRD tables exist; migrations repeat without duplicating content", 
   ])
     assert.ok(rows.some((r) => r.table_name === table));
   const result = await request("/api/catalog");
-  assert.equal(result.body.lessons.length, 87);
-  assert.equal(result.body.scenarios.length, 82);
-  assert.equal(result.body.lessons.flatMap((l) => l.phrases).length, 1740);
+  assert.equal(result.body.lessons.length, 210);
+  assert.equal(result.body.scenarios.length, 205);
+  assert.equal(result.body.lessons.flatMap((l) => l.phrases).length, 4200);
   assert.ok(
     result.body.scenarios.every(
       (s) => s.lines.length === 4 && s.hints.length === 4,
@@ -260,7 +260,7 @@ test("built frontend loads API content and saves learning changes without localS
   const dom = await browser(cookie);
   try {
     const document = dom.window.document;
-    assert.ok(document.body.textContent.includes("1977"));
+    assert.ok(document.body.textContent.includes("4806"));
     click(dom, "Bài học");
     await waitFor(() => document.querySelector(".lesson-grid"));
     assert.ok(document.body.textContent.includes("Database-backed lesson"));
@@ -393,7 +393,7 @@ test("database errors produce a failure response instead of false success", asyn
 
 test("new content covers sales, landmarks and souvenirs with vocabulary and review persistence", async () => {
   const { body: catalog } = await request("/api/catalog");
-  assert.equal(catalog.lessons.flatMap((l) => l.vocabulary).length, 237);
+  assert.equal(catalog.lessons.flatMap((l) => l.vocabulary).length, 606);
   for (const id of [
     105, 106, 107, 108, 109, 205, 206, 207, 208, 209, 210, 211, 212, 213, 214,
   ]) {
@@ -471,12 +471,12 @@ test("upgrading an existing database preserves previous lessons and learner prog
     assert.equal(
       (await existing.query("SELECT COUNT(*)::int AS n FROM lessons")).rows[0]
         .n,
-      87,
+      210,
     );
     assert.equal(
       (await existing.query("SELECT COUNT(*)::int AS n FROM phrases")).rows[0]
         .n,
-      1977,
+      4806,
     );
     assert.equal(
       (await existing.query("SELECT title FROM lessons WHERE lesson_id=101"))
@@ -632,11 +632,11 @@ test("listening quiz speaks the context, hides transcript, checks answers and re
   }
 });
 
-test("all 82 illustrated conversations contain two named characters and eight translated lines", async () => {
+test("all 205 illustrated conversations contain two named characters and eight translated lines", async () => {
   const { body: catalog } = await request("/api/catalog");
-  assert.equal(catalog.scenarios.length, 82);
+  assert.equal(catalog.scenarios.length, 205);
   for (const scenario of catalog.scenarios) {
-    assert.match(scenario.illustrationKey, /^(field-(?:[3-9]|10)|legacy-[0-6])-[0-5]$/);
+    assert.match(scenario.illustrationKey, /^(field-(?:[3-9]|10)|legacy-[0-6]|cefr-(?:A1|B2|C1|C2))-[0-5]$/);
     assert.ok(scenario.illustrationAlt);
     assert.ok(
       scenario.partnerName &&
@@ -656,6 +656,7 @@ test("all 82 illustrated conversations contain two named characters and eight tr
     "conversation-scenes.png",
     "landmark-scenes.png",
     "additional-scenes.png",
+    ...["A1","B2","C1","C2"].map(l=>`lesson-cefr-${l}.png`),
     ...Array.from({length:8}, (_,i)=>`lesson-field-${i+3}.png`),
     ...Array.from({length:7}, (_,i)=>`lesson-legacy-${i}.png`),
   ]) {
@@ -796,19 +797,19 @@ test("release diagnostics report real database counts and avoid caching the HTML
   const info = await fetch(origin + "/api/version");
   assert.equal(info.status, 200);
   assert.equal(info.headers.get("cache-control"), "no-store");
-  assert.equal(info.headers.get("x-ct-speak-version"), "1.12.0");
+  assert.equal(info.headers.get("x-ct-speak-version"), "1.13.0");
   const version = await info.json();
-  assert.equal(version.version, "1.12.0");
-  assert.equal(version.lessons, 87);
-  assert.equal(version.scenarios, 82);
-  assert.equal(version.phrases, 1977);
-  assert.equal(version.migration, "015_cefr_lesson_levels.sql");
+  assert.equal(version.version, "1.13.0");
+  assert.equal(version.lessons, 210);
+  assert.equal(version.scenarios, 205);
+  assert.equal(version.phrases, 4806);
+  assert.equal(version.migration, "016_thirty_five_lessons_per_level.sql");
   for (const path of ["/", "/index.html", "/app-version.json"]) {
     const response = await fetch(origin + path);
     assert.equal(response.status, 200);
     assert.ok(response.headers.get("cache-control").includes("no-store"));
     if (path === "/app-version.json")
-      assert.equal((await response.json()).version, "1.12.0");
+      assert.equal((await response.json()).version, "1.13.0");
   }
 });
 
@@ -817,7 +818,7 @@ test("home and lesson library show illustrations and the visible release label",
   try {
     const document = dom.window.document;
     assert.ok(
-      document.querySelector(".sidebar-bottom").textContent.includes("1.12.0"),
+      document.querySelector(".sidebar-bottom").textContent.includes("1.13.0"),
     );
     assert.ok(!document.querySelector("nav").textContent.includes("YouTube"));
     const heroImage = document.querySelector(".hero-visual img");
@@ -831,10 +832,10 @@ test("home and lesson library show illustrations and the visible release label",
     );
     click(dom, "Bài học");
     await waitFor(() => document.querySelector(".lesson-grid"));
-    assert.equal(document.querySelectorAll(".lesson-card").length, 87);
+    assert.equal(document.querySelectorAll(".lesson-card").length, 210);
     assert.equal(
       document.querySelectorAll('.lesson-card-art [role="img"]').length,
-      87,
+      210,
     );
     const card=document.querySelector('.lesson-card');
     const scene=card.querySelector('[role="img"]').style.backgroundImage;
@@ -846,11 +847,11 @@ test("home and lesson library show illustrations and the visible release label",
   }
 });
 
-test("all 87 lessons have twenty sentences while vocabulary and existing review indexes stay separate", async () => {
+test("all 210 lessons have twenty sentences while vocabulary and existing review indexes stay separate", async () => {
   const { body: catalog } = await request("/api/catalog");
-  assert.equal(catalog.lessons.length, 87);
-  assert.equal(catalog.lessons.flatMap((l) => l.phrases).length, 1740);
-  assert.equal(catalog.lessons.flatMap((l) => l.flashcards).length, 1977);
+  assert.equal(catalog.lessons.length, 210);
+  assert.equal(catalog.lessons.flatMap((l) => l.phrases).length, 4200);
+  assert.equal(catalog.lessons.flatMap((l) => l.flashcards).length, 4806);
   for (const lesson of catalog.lessons) {
     assert.equal(lesson.phrases.length, 20);
     assert.equal(
@@ -982,14 +983,14 @@ test("end-of-lesson game grades typed answers, shows results and resets replay",
   }
 });
 
-test("eight new professional fields each have six complete lessons and six dialogues", async () => {
+test("original professional field lessons keep their six complete lessons and dialogues", async () => {
   const { body: catalog } = await request("/api/catalog");
   assert.equal(catalog.fields.length, 10);
   for (let fieldId = 3; fieldId <= 10; fieldId++) {
     const field = catalog.fields.find((f) => f.id === fieldId);
     assert.ok(field.title);
-    const lessons = catalog.lessons.filter((l) => l.fieldId === fieldId);
-    const dialogues = catalog.scenarios.filter((s) => s.fieldId === fieldId);
+    const lessons = catalog.lessons.filter((l) => l.fieldId === fieldId && l.id<500);
+    const dialogues = catalog.scenarios.filter((s) => s.fieldId === fieldId && s.lessonId<500);
     assert.equal(lessons.length, 6);
     assert.equal(dialogues.length, 6);
     for (const lesson of lessons) {
@@ -1010,6 +1011,7 @@ test("eight new professional fields each have six complete lessons and six dialo
 });
 
 test("field filters select matching lessons and conversations", async () => {
+  const {body:catalog}=await request("/api/catalog");
   const dom = await browser(cookie);
   try {
     const document = dom.window.document;
@@ -1020,7 +1022,7 @@ test("field filters select matching lessons and conversations", async () => {
     const field = document.querySelector('[aria-label="Lĩnh vực bài học"]');
     field.value = "3";
     field.dispatchEvent(new dom.window.Event("change", { bubbles: true }));
-    await waitFor(() => document.querySelectorAll(".lesson-card").length === 6);
+    await waitFor(() => document.querySelectorAll(".lesson-card").length === catalog.lessons.filter(l=>l.fieldId===3).length);
     assert.ok(
       document.querySelector(".lesson-grid").textContent.includes("đăng nhập"),
     );
@@ -1042,7 +1044,7 @@ test("field filters select matching lessons and conversations", async () => {
     );
     assert.equal(
       document.querySelectorAll(".scenario-picker button").length,
-      6,
+      catalog.scenarios.filter(s=>s.fieldId===4).length,
     );
     assert.ok(
       document
@@ -1055,15 +1057,15 @@ test("field filters select matching lessons and conversations", async () => {
   }
 });
 
- test("every lesson owns a distinct scene matching its dialogue", async () => {
+ test("lesson scenes match their dialogues and original artwork is retained", async () => {
  const {body:catalog}=await request("/api/catalog");
- assert.equal(new Set(catalog.lessons.map(l=>l.illustrationKey)).size,87);
+ assert.equal(new Set(catalog.lessons.filter(l=>l.id<500).map(l=>l.illustrationKey)).size,87);
  for(const l of catalog.lessons){
- assert.match(l.illustrationKey,/^(field-(?:[3-9]|10)|legacy-[0-6])-[0-5]$/);
+ assert.match(l.illustrationKey,/^(field-(?:[3-9]|10)|legacy-[0-6]|cefr-(?:A1|B2|C1|C2))-[0-5]$/);
  assert.ok(l.illustrationAlt.endsWith(l.desc));
  for(const s of catalog.scenarios.filter(s=>s.lessonId===l.id)) assert.equal(s.illustrationKey,l.illustrationKey);
  }
- for(let id=3;id<=10;id++) assert.equal(new Set(catalog.lessons.filter(l=>l.fieldId===id).map(l=>l.title)).size,6);
+ for(let id=3;id<=10;id++) assert.equal(new Set(catalog.lessons.filter(l=>l.fieldId===id&&l.id<500).map(l=>l.title)).size,6);
  });
 
 test('AI chats use owned server history, persist replies and reject other profiles',async()=>{
@@ -1175,9 +1177,9 @@ test('CEFR catalog has six ordered levels in three groups and every lesson is cl
  assert.deepEqual(catalog.levels.map(l=>l.code),['A1','A2','B1','B2','C1','C2']);
  assert.deepEqual(catalog.levels.map(l=>l.group),['basic','basic','independent','independent','proficient','proficient']);
  for(const l of catalog.lessons){const level=catalog.levels.find(v=>v.code===l.level);assert.ok(level);assert.equal(l.levelTitle,level.title);assert.equal(l.levelOrder,level.order);assert.equal(l.levelGroup,level.groupTitle);assert.equal(l.phrases.length,20);}
- assert.equal(catalog.lessons.filter(l=>l.level==='C1'||l.level==='C2').length,0);
+ for(const level of catalog.levels)assert.equal(catalog.lessons.filter(l=>l.level===level.code).length,35);
 });
-test('lesson levels filter cards, show empty advanced levels and appear in lesson details',async()=>{
+test('all six lesson levels filter 35 cards and appear in lesson details',async()=>{
  const dom=await browser(cookie);
  try{
   const document=dom.window.document;click(dom,'Bài học');await waitFor(()=>document.querySelector('.cefr-groups'));
@@ -1186,11 +1188,31 @@ test('lesson levels filter cards, show empty advanced levels and appear in lesso
   select('A2');await waitFor(()=>document.querySelector('.cefr-group button[aria-pressed="true"]')?.textContent.includes('A2'));
   assert.ok([...document.querySelectorAll('.lesson-card .mini')].every(c=>c.textContent.trim().startsWith('A2')));
   assert.ok(document.querySelectorAll('.lesson-card').length>0);
-  select('C2');await waitFor(()=>document.querySelector('.cefr-empty'));assert.equal(document.querySelectorAll('.lesson-card').length,0);
-  click(dom,'Tất cả cấp độ');await waitFor(()=>document.querySelectorAll('.lesson-card').length===87);
+  select('C2');await waitFor(()=>document.querySelectorAll('.lesson-card').length===35&&document.querySelector('.lesson-card .mini').textContent.trim().startsWith('C2'));
+  assert.equal(document.querySelector('.cefr-empty'),null);
+  click(dom,'Tất cả cấp độ');await waitFor(()=>document.querySelectorAll('.lesson-card').length===210);
   assert.ok(document.querySelector('.lesson-card .mini').textContent.trim().startsWith('A1'));
   select('A2');await waitFor(()=>document.querySelector('.lesson-card .mini')?.textContent.trim().startsWith('A2'));
   document.querySelector('.lesson-card').click();await waitFor(()=>document.querySelector('.lesson-detail'));
   assert.ok(document.querySelector('.page-title .eyebrow').textContent.trim().startsWith('A2'));
  }finally{dom.window.close();}
+});
+
+test('new CEFR expansion adds distinct topics and genuine advanced language without relabelling old lessons',async()=>{
+ const {body:catalog}=await request('/api/catalog');
+ assert.equal(catalog.lessons.length,210);
+ assert.equal(new Set(catalog.lessons.map(l=>l.title)).size,210);
+ const added=catalog.lessons.filter(l=>l.id>=501);
+ assert.equal(added.length,123);
+ for(const [level,count] of [['A1',29],['B2',24],['C1',35],['C2',35]])assert.equal(added.filter(l=>l.level===level).length,count);
+ for(const lesson of added){
+   assert.equal(lesson.phrases.length,20);assert.equal(lesson.vocabulary.length,3);
+   assert.ok(lesson.phrases.every(p=>p[0]&&p[1]&&p[2].startsWith('/')));
+   assert.equal(catalog.scenarios.filter(s=>s.lessonId===lesson.id&&s.dialogue.length===8).length,1);
+   assert.ok(lesson.illustrationKey.startsWith('cefr-'+lesson.level+'-'));
+   if(lesson.level==='C1')assert.ok(lesson.phrases.some(p=>p[0].includes('Nevertheless')));
+   if(lesson.level==='C2')assert.ok(lesson.phrases.some(p=>p[0].includes('disingenuous to gloss over')));
+ }
+ assert.equal(catalog.lessons.find(l=>l.id===101).level,'A1');
+ assert.equal(catalog.lessons.find(l=>l.id===403).level,'B2');
 });

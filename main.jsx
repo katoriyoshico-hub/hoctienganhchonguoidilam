@@ -653,7 +653,7 @@ function App({ levels, fields, lessons, scenarios, listeningExercises, initialSt
                       </button>)}
                     </div>)}
                   </div>
-                  <p className="note">Mức gợi ý theo nội dung bài; một số câu mở rộng có thể khó hơn. C1 và C2 hiện chưa có bài chuyên sâu tương ứng.</p>
+                  <p className="note">Mỗi cấp độ có 35 bài, mỗi bài 20 câu. Mức học là gợi ý theo nội dung; bạn có thể chọn mức phù hợp để luyện.</p>
                   {lessonLevel!=='all'&&<p className="cefr-description">{lessonLevel} · {levels.find(l=>l.code===lessonLevel)?.description}</p>}
                 </section>
                 <label className="field-filter">
