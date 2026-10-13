@@ -2,6 +2,8 @@
 
 Ứng dụng React/Vite với API Express và cơ sở dữ liệu PostgreSQL thật. Bài học, mẫu câu, kịch bản và lượt thoại được nạp từ SQL qua API; mục tiêu, tiến độ, lượt ôn và phiên luyện tập được ghi vào PostgreSQL thay cho localStorage.
 
+Hiện có **39 bài học, 204 mẫu câu/từ vựng, 34 hội thoại hai nhân vật và 45 tình huống luyện nghe từ vựng**.
+
 ## Cài đặt và chạy
 
 Cần Node.js 22.9+ (khuyến nghị 24), npm và Docker Compose, hoặc một máy chủ PostgreSQL có sẵn.
@@ -68,7 +70,7 @@ NODE_ENV=production npm start
 
 Cấu hình `DATABASE_URL` tới PostgreSQL có xác thực; giữ chuỗi kết nối ở máy chủ, không đưa vào frontend. Máy chủ mặc định lắng nghe trên `0.0.0.0` và dùng cổng trong biến `PORT`; địa chỉ lắng nghe không bị biến `HOST` của nền tảng ghi đè khi triển khai container và cung cấp HTTPS qua reverse proxy. Khi `NODE_ENV=production`, cookie chỉ gửi qua HTTPS. API phục vụ cả `dist`; frontend tĩnh trên Vercel/Netlify riêng cần cấu hình proxy `/api` tới backend. Không thể triển khai đầy đủ chỉ bằng việc tải `dist` lên hosting tĩnh.
 
-Phát âm và nhận diện giọng nói vẫn dùng Web Speech API, phụ thuộc trình duyệt, quyền microphone và có thể cần mạng. Hội thoại vẫn dựa trên kịch bản trong CSDL; chưa có AI sinh phản hồi hay chấm phát âm. Lịch ôn hiện giữ quy tắc 10 phút / 1 ngày / 4 ngày, chưa triển khai SM-2 đầy đủ. Lộ trình hiện có 23 bài; không tuyên bố đáp ứng toàn bộ tiêu chí sản phẩm trong PRD.
+Phát âm và nhận diện giọng nói vẫn dùng Web Speech API, phụ thuộc trình duyệt, quyền microphone và có thể cần mạng. Hội thoại vẫn dựa trên kịch bản trong CSDL; chưa có AI sinh phản hồi hay chấm phát âm. Lịch ôn hiện giữ quy tắc 10 phút / 1 ngày / 4 ngày, chưa triển khai SM-2 đầy đủ. Lộ trình hiện có 39 bài; không tuyên bố đáp ứng toàn bộ tiêu chí sản phẩm trong PRD.
 
 ## Triển khai trên Vibehost
 
@@ -108,3 +110,18 @@ Mở **Luyện nghe từ vựng** trên thanh điều hướng. Migration `005_c
 4. Xem đáp án, chuyển tình huống và nhận kết quả cuối lượt. Có thể luyện lại chủ đề.
 
 Nội dung bài nghe được lưu trong PostgreSQL và trả về ở `listeningExercises` trong `/api/catalog`; không dùng nội dung giả lập trong frontend. Giọng đọc dùng SpeechSynthesis của trình duyệt, chưa phải bản thu của người bản địa. Điểm lượt nghe nằm trong phiên giao diện hiện tại, chưa lưu lịch sử điểm vào tài khoản. Khi triển khai lại, `npm start` tự chạy migration mới.
+
+## Hội thoại hai nhân vật có hình minh họa
+
+Migration `006_illustrated_conversations.sql` thêm 16 bài mới (96 mẫu câu/từ vựng) và 16 kịch bản. Tổng thư viện hiện có **39 bài, 204 mẫu câu/từ vựng và 34 hội thoại**. Nội dung bổ sung gồm chọn kích cỡ, kiểm tra tồn kho, giao hàng, bảo hành, khiếu nại, tư vấn điện thoại, đặt lịch, mã ưu đãi, tham quan Sagrada Família/Vạn Lý Trường Thành/Niagara/Central Park, gọi cà phê, hỏi thành phần món ăn, gửi hành lý và đồ thất lạc.
+
+Mỗi hội thoại có hai nhân vật được đặt tên, tám lượt nói luân phiên và bản dịch tiếng Việt. Mở **Hội thoại**, chọn tình huống rồi:
+
+- Nhấn **Nghe toàn bộ hội thoại** để nghe lần lượt cả hai nhân vật; lượt đang phát được tô viền.
+- Chọn tốc độ chậm/vừa/tự nhiên; chọn giọng riêng cho mỗi nhân vật nếu trình duyệt có nhiều giọng tiếng Anh.
+- Nhấn **Nghe lượt** để nghe một câu, **Dừng phát** để dừng; thay đổi tình huống hoặc rời trang sẽ hủy giọng đọc cũ.
+- Tắt **Hiện bản dịch** để tập nghe tiếng Anh. Mở **Luyện trả lời từng lượt** để tiếp tục luyện nói và lưu phiên thực hành như trước.
+
+18 hình minh họa được tạo cho ứng dụng và đóng gói trong `public/illustrations`, gồm bối cảnh giao tiếp chung và các địa danh tương ứng. Đây là tranh minh họa, không phải ảnh thực địa. Giọng đọc vẫn là SpeechSynthesis; chưa phải ghi âm của diễn viên/người bản địa. Hệ thống không cần khóa API hay dịch vụ ảnh bên ngoài để dùng các hình này.
+
+Migration thêm dữ liệu và bảng `dialogue_lines`, không xóa bài học hay lịch sử luyện tập. Các lượt luyện nói cũ vẫn được giữ; lời thoại hướng dẫn được đồng bộ với bản hội thoại mẫu mới. Dockerfile sao chép cả component và ảnh để chúng có mặt khi triển khai trên Vibehost.

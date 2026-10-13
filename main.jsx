@@ -19,6 +19,7 @@ import {
   Flame,
 } from "lucide-react";
 import "./style.css";
+import Conversation from "./Conversation.jsx";
 async function api(path, body, method = "PUT") {
   const r = await fetch(path, {
     method,
@@ -272,6 +273,7 @@ function App({ lessons, scenarios, listeningExercises, initialState }) {
     l.phrases.map((p, i) => ({ key: `${l.id}-${i}`, p, lesson: l })),
   );
   const speak = (t, rate = 0.82) => {
+    window.dispatchEvent(new Event("ct-stop-dialogue"));
     if (!("speechSynthesis" in window)) {
       alert("Trình duyệt không hỗ trợ phát âm.");
       return;
@@ -283,6 +285,7 @@ function App({ lessons, scenarios, listeningExercises, initialState }) {
     speechSynthesis.speak(u);
   };
   const record = () => {
+    window.dispatchEvent(new Event("ct-stop-dialogue"));
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SR) {
       alert(
@@ -705,91 +708,103 @@ function App({ lessons, scenarios, listeningExercises, initialState }) {
                   <span className="eyebrow dark">THỰC HÀNH GIAO TIẾP</span>
                   <h1>Hội thoại tình huống</h1>
                   <p>
-                    Đóng vai với kịch bản mẫu và luyện trả lời bằng tiếng Anh.
+                    Nghe hai nhân vật trò chuyện và luyện trả lời bằng tiếng
+                    Anh.
                   </p>
                 </div>
-                <div className="filters">
-                  {scenarios.map((s, i) => (
-                    <button
-                      className={scenario === s ? "active" : ""}
-                      key={s.title}
-                      onClick={() => {
-                        setScenario(s);
-                        setSessionId(null);
-                        setTurn(0);
-                        setAnswers([]);
-                        setHeard("");
-                      }}
-                    >
-                      {s.title}
-                    </button>
-                  ))}
-                </div>
+                <details className="scenario-picker">
+                  <summary>
+                    Chọn tình huống: {scenario.title} · {scenarios.length} hội
+                    thoại
+                  </summary>
+                  <div className="filters">
+                    {scenarios.map((s, i) => (
+                      <button
+                        className={scenario === s ? "active" : ""}
+                        key={s.title}
+                        onClick={(event) => {
+                          event.currentTarget.closest("details").open = false;
+                          setScenario(s);
+                          setSessionId(null);
+                          setTurn(0);
+                          setAnswers([]);
+                          setHeard("");
+                        }}
+                      >
+                        {s.title}
+                      </button>
+                    ))}
+                  </div>
+                </details>
                 <div className="scenario-context">
                   <p>
                     <strong>Vai của bạn:</strong> {scenario.userRole}
                   </p>
                   <p>{scenario.briefing}</p>
                 </div>
-                <div className="chat-panel">
-                  <div className="chat-header">
-                    <div className="bot-avatar">✦</div>
-                    <div>
-                      <b>{scenario.role}</b>
-                      <small>
-                        Kịch bản mô phỏng · {turn + 1}/{scenario.lines.length}
+                <Conversation key={scenario.id} scenario={scenario} />
+                <details className="guided-practice">
+                  <summary>Luyện trả lời từng lượt</summary>
+                  <div className="chat-panel">
+                    <div className="chat-header">
+                      <div className="bot-avatar">✦</div>
+                      <div>
+                        <b>{scenario.role}</b>
+                        <small>
+                          Kịch bản mô phỏng · {turn + 1}/{scenario.lines.length}
+                        </small>
+                      </div>
+                    </div>
+                    <div className="chat-body">
+                      {scenario.lines.slice(0, turn + 1).map((line, i) => (
+                        <React.Fragment key={i}>
+                          <div className="chat bot">
+                            {line}
+                            <button
+                              onClick={() => speak(line)}
+                              aria-label="Nghe câu"
+                            >
+                              <Volume2 size={16} />
+                            </button>
+                          </div>
+                          {answers[i] && (
+                            <div className="chat user">{answers[i]}</div>
+                          )}
+                        </React.Fragment>
+                      ))}
+                    </div>
+                    <div className="chat-bottom">
+                      <p>
+                        <b>Gợi ý trả lời:</b>{" "}
+                        {scenario.hints[
+                          Math.min(turn, scenario.hints.length - 1)
+                        ] || "Thank you very much!"}
+                      </p>
+                      <div className="practice-actions">
+                        <button
+                          className="outline"
+                          onClick={() => speak(scenario.lines[turn])}
+                        >
+                          <Volume2 size={17} /> Nghe câu hỏi
+                        </button>
+                        <button className="outline" onClick={record}>
+                          <Mic size={17} />
+                          {listening ? "Đang nghe..." : "Nói câu trả lời"}
+                        </button>
+                        <button className="primary" onClick={advance}>
+                          {turn === scenario.lines.length - 1
+                            ? "Luyện lại"
+                            : "Tiếp tục"}{" "}
+                          <ArrowRight size={16} />
+                        </button>
+                      </div>
+                      <small className="disclaimer">
+                        Phiên bản demo: lời thoại được định sẵn, chưa có AI phản
+                        hồi linh hoạt hay chấm điểm.
                       </small>
                     </div>
                   </div>
-                  <div className="chat-body">
-                    {scenario.lines.slice(0, turn + 1).map((line, i) => (
-                      <React.Fragment key={i}>
-                        <div className="chat bot">
-                          {line}
-                          <button
-                            onClick={() => speak(line)}
-                            aria-label="Nghe câu"
-                          >
-                            <Volume2 size={16} />
-                          </button>
-                        </div>
-                        {answers[i] && (
-                          <div className="chat user">{answers[i]}</div>
-                        )}
-                      </React.Fragment>
-                    ))}
-                  </div>
-                  <div className="chat-bottom">
-                    <p>
-                      <b>Gợi ý trả lời:</b>{" "}
-                      {scenario.hints[
-                        Math.min(turn, scenario.hints.length - 1)
-                      ] || "Thank you very much!"}
-                    </p>
-                    <div className="practice-actions">
-                      <button
-                        className="outline"
-                        onClick={() => speak(scenario.lines[turn])}
-                      >
-                        <Volume2 size={17} /> Nghe câu hỏi
-                      </button>
-                      <button className="outline" onClick={record}>
-                        <Mic size={17} />
-                        {listening ? "Đang nghe..." : "Nói câu trả lời"}
-                      </button>
-                      <button className="primary" onClick={advance}>
-                        {turn === scenario.lines.length - 1
-                          ? "Luyện lại"
-                          : "Tiếp tục"}{" "}
-                        <ArrowRight size={16} />
-                      </button>
-                    </div>
-                    <small className="disclaimer">
-                      Phiên bản demo: lời thoại được định sẵn, chưa có AI phản
-                      hồi linh hoạt hay chấm điểm.
-                    </small>
-                  </div>
-                </div>
+                </details>
               </>
             )}
             {page === "flashcards" && (

@@ -51,7 +51,7 @@ test("deployment starts on an empty database and restarts without reseeding", as
       `http://127.0.0.1:${restarted.address().port}/api/catalog`,
     );
     assert.equal(response.status, 200);
-    assert.equal((await response.json()).lessons.length, 23);
+    assert.equal((await response.json()).lessons.length, 39);
   } finally {
     await new Promise((resolve) => restarted.close(resolve));
   }
@@ -97,9 +97,9 @@ test("all ten PRD tables exist; migrations repeat without duplicating content", 
   ])
     assert.ok(rows.some((r) => r.table_name === table));
   const result = await request("/api/catalog");
-  assert.equal(result.body.lessons.length, 23);
-  assert.equal(result.body.scenarios.length, 18);
-  assert.equal(result.body.lessons.flatMap((l) => l.phrases).length, 108);
+  assert.equal(result.body.lessons.length, 39);
+  assert.equal(result.body.scenarios.length, 34);
+  assert.equal(result.body.lessons.flatMap((l) => l.phrases).length, 204);
   assert.ok(
     result.body.scenarios.every(
       (s) => s.lines.length === 4 && s.hints.length === 4,
@@ -250,13 +250,15 @@ function click(dom, text) {
     b.textContent.includes(text),
   );
   assert.ok(button, "Button: " + text);
+  const details = button.closest("details");
+  if (details) details.open = true;
   button.click();
 }
 test("built frontend loads API content and saves learning changes without localStorage", async () => {
   const dom = await browser(cookie);
   try {
     const document = dom.window.document;
-    assert.ok(document.body.textContent.includes("108"));
+    assert.ok(document.body.textContent.includes("204"));
     click(dom, "Bài học");
     await waitFor(() => document.querySelector(".lesson-grid"));
     assert.ok(document.body.textContent.includes("Database-backed lesson"));
@@ -376,7 +378,7 @@ test("database errors produce a failure response instead of false success", asyn
 
 test("new content covers sales, landmarks and souvenirs with vocabulary and review persistence", async () => {
   const { body: catalog } = await request("/api/catalog");
-  assert.equal(catalog.lessons.flatMap((l) => l.vocabulary).length, 45);
+  assert.equal(catalog.lessons.flatMap((l) => l.vocabulary).length, 93);
   for (const id of [
     105, 106, 107, 108, 109, 205, 206, 207, 208, 209, 210, 211, 212, 213, 214,
   ]) {
@@ -454,12 +456,12 @@ test("upgrading an existing database preserves previous lessons and learner prog
     assert.equal(
       (await existing.query("SELECT COUNT(*)::int AS n FROM lessons")).rows[0]
         .n,
-      23,
+      39,
     );
     assert.equal(
       (await existing.query("SELECT COUNT(*)::int AS n FROM phrases")).rows[0]
         .n,
-      108,
+      204,
     );
     assert.equal(
       (await existing.query("SELECT title FROM lessons WHERE lesson_id=101"))
@@ -606,6 +608,184 @@ test("listening quiz speaks the context, hides transcript, checks answers and re
     click(dom, "Luyện lại chủ đề");
     await waitFor(() => document.querySelector(".listening-choices"));
     assert.ok(document.body.textContent.includes("Đúng 0/0"));
+  } finally {
+    dom.window.close();
+  }
+});
+
+test("all 34 illustrated conversations contain two named characters and eight translated lines", async () => {
+  const { body: catalog } = await request("/api/catalog");
+  assert.equal(catalog.scenarios.length, 34);
+  const keys = new Set([
+    "office",
+    "phone",
+    "airport",
+    "online",
+    "fitting",
+    "packing",
+    "retail",
+    "city",
+    "museum",
+    "souvenir",
+    "hotel",
+    "restaurant",
+    "wall",
+    "falls",
+    "park",
+    "barcelona",
+    "temple",
+    "rome",
+  ]);
+  for (const scenario of catalog.scenarios) {
+    assert.ok(keys.has(scenario.illustrationKey));
+    assert.ok(scenario.illustrationAlt);
+    assert.ok(
+      scenario.partnerName &&
+        scenario.learnerName &&
+        scenario.partnerName !== scenario.learnerName,
+    );
+    assert.equal(scenario.dialogue.length, 8);
+    scenario.dialogue.forEach((line, i) => {
+      assert.equal(line.position, i + 1);
+      assert.equal(line.speaker, i % 2 ? "learner" : "partner");
+      assert.ok(line.english && line.vietnamese);
+      if (i % 2 === 0) assert.equal(line.english, scenario.lines[i / 2]);
+      else assert.equal(line.english, scenario.hints[(i - 1) / 2]);
+    });
+  }
+  for (const file of [
+    "conversation-scenes.png",
+    "landmark-scenes.png",
+    "additional-scenes.png",
+  ]) {
+    const response = await fetch(origin + "/illustrations/" + file);
+    assert.equal(response.status, 200);
+    assert.deepEqual(
+      [...new Uint8Array(await response.arrayBuffer()).slice(0, 8)],
+      [137, 80, 78, 71, 13, 10, 26, 10],
+    );
+  }
+});
+
+test("two-character playback follows dialogue order, supports individual lines, stop and scenario changes", async () => {
+  const { body: catalog } = await request("/api/catalog");
+  const dom = await browser(cookie);
+  const spoken = [];
+  let canceled = 0;
+  const voices = [
+    { voiceURI: "voice-a", name: "English A", lang: "en-US" },
+    { voiceURI: "voice-b", name: "English B", lang: "en-GB" },
+  ];
+  dom.window.SpeechSynthesisUtterance = class {
+    constructor(text) {
+      this.text = text;
+    }
+  };
+  dom.window.speechSynthesis = {
+    getVoices: () => voices,
+    cancel() {
+      canceled++;
+    },
+    speak(utterance) {
+      spoken.push(utterance);
+      utterance.onstart?.();
+    },
+    addEventListener() {},
+    removeEventListener() {},
+  };
+  try {
+    const document = dom.window.document;
+    click(dom, "Hội thoại");
+    await waitFor(() => document.querySelector(".conversation-player"));
+    assert.equal(document.querySelectorAll(".dialogue-line.partner").length, 4);
+    assert.equal(document.querySelectorAll(".dialogue-line.learner").length, 4);
+    assert.ok(
+      document
+        .querySelector(".conversation-illustration")
+        .style.backgroundImage.includes("additional-scenes.png"),
+    );
+    assert.equal(document.querySelectorAll(".dialogue-translation").length, 8);
+    click(dom, "Nghe toàn bộ hội thoại");
+    await waitFor(() => spoken.length === 1);
+    for (let i = 0; i < 8; i++) {
+      assert.equal(spoken[i].text, catalog.scenarios[0].dialogue[i].english);
+      assert.equal(spoken[i].voice.voiceURI, i % 2 ? "voice-b" : "voice-a");
+      await waitFor(
+        () =>
+          document.querySelector(".speaking p")?.textContent === spoken[i].text,
+      );
+      assert.equal(
+        document.querySelector(".speaking p").textContent,
+        spoken[i].text,
+      );
+      spoken[i].onend();
+      if (i < 7) await waitFor(() => spoken.length === i + 2);
+    }
+    await waitFor(
+      () => !document.querySelector(".conversation-controls .primary").disabled,
+    );
+    document.querySelector('[aria-label="Nghe lượt 3"]').click();
+    await waitFor(() => spoken.length === 9);
+    assert.equal(spoken[8].text, catalog.scenarios[0].dialogue[2].english);
+    click(dom, "Dừng phát");
+    await waitFor(() => !document.querySelector(".speaking"));
+    spoken[8].onend();
+    await new Promise((r) => setTimeout(r, 180));
+    assert.equal(spoken.length, 9);
+    assert.ok(canceled > 0);
+    const checkbox = document.querySelector(".conversation-controls input");
+    checkbox.click();
+    await waitFor(
+      () => document.querySelectorAll(".dialogue-translation").length === 0,
+    );
+    click(dom, "Nghe toàn bộ hội thoại");
+    await waitFor(() => spoken.length === 10);
+    click(dom, "Hỏi người bản địa đường đến tháp Eiffel");
+    await waitFor(() =>
+      document.querySelector(".scenario-context").textContent.includes("Paris"),
+    );
+    spoken[9].onend();
+    await new Promise((r) => setTimeout(r, 180));
+    assert.equal(spoken.length, 10);
+    assert.ok(!document.querySelector(".speaking"));
+    click(dom, "Ngắm thác Niagara");
+    await waitFor(() =>
+      document
+        .querySelector(".conversation-illustration")
+        .style.backgroundImage.includes("landmark-scenes.png"),
+    );
+    assert.ok(
+      document
+        .querySelector(".conversation-illustration")
+        .getAttribute("aria-label")
+        .includes("Niagara"),
+    );
+  } finally {
+    dom.window.close();
+  }
+});
+
+test("conversation reports unavailable speech synthesis without starting playback", async () => {
+  const dom = await browser(cookie);
+  try {
+    click(dom, "Hội thoại");
+    await waitFor(() =>
+      dom.window.document.querySelector(".conversation-player"),
+    );
+    click(dom, "Nghe toàn bộ hội thoại");
+    await waitFor(() =>
+      dom.window.document.querySelector('.conversation-player [role="alert"]'),
+    );
+    assert.ok(
+      dom.window.document
+        .querySelector('.conversation-player [role="alert"]')
+        .textContent.includes("chưa hỗ trợ"),
+    );
+    assert.equal(
+      dom.window.document.querySelector(".conversation-controls .primary")
+        .disabled,
+      false,
+    );
   } finally {
     dom.window.close();
   }

@@ -26,6 +26,10 @@ export function createApp(pool) {
       ) l) AS lessons,
       (SELECT COALESCE(json_agg(s ORDER BY s.id), '[]'::json) FROM (
         SELECT s.scenario_id AS id, s.title, s.ai_role_name AS role, s.user_role_name AS "userRole", s.context_briefing AS briefing,
+          s.illustration_key AS "illustrationKey", s.illustration_alt AS "illustrationAlt",
+          s.partner_name AS "partnerName", s.learner_name AS "learnerName",
+          (SELECT COALESCE(json_agg(json_build_object('position', d.position, 'speaker', d.speaker, 'english', d.english_text, 'vietnamese', d.vietnamese_text) ORDER BY d.position), '[]'::json)
+            FROM dialogue_lines d WHERE d.scenario_id=s.scenario_id) AS dialogue,
           CASE m.category WHEN 'WORKPLACE_CONSULTING' THEN 'work' ELSE 'travel' END AS cat,
           (SELECT COALESCE(json_agg(t.bot_reaction_rules ORDER BY t.step_order), '[]'::json) FROM scenario_turns t WHERE t.scenario_id = s.scenario_id) AS lines,
           (SELECT COALESCE(json_agg(t.suggested_sample_phrases[1] ORDER BY t.step_order), '[]'::json) FROM scenario_turns t WHERE t.scenario_id = s.scenario_id) AS hints
