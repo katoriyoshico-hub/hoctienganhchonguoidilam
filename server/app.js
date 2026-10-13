@@ -1,4 +1,5 @@
 import express from "express";
+import {registerYoutubeAudio} from "./youtube-audio.js";
 import { registerAI } from "./ai.js";
 import { registerYoutube } from "./youtube.js";
 import { registerState } from "./state.js";
@@ -30,6 +31,7 @@ export function createApp(pool, options = {}) {
   app.use(express.json({ limit: "32kb" }));
   registerState(app, pool);
   registerYoutube(app, options);
+  registerYoutubeAudio(app,pool,options);
   registerAI(app, pool, options);
   app.get("/api/health", async (_req, res) => {
     await pool.query("SELECT 1");

@@ -12,7 +12,11 @@ export default function YoutubeReader() {
     [seekCount, setSeekCount] = useState(0),
     [view, setView] = useState("paragraph"),
     [pasted, setPasted] = useState(""),
-    [speed, setSpeed] = useState("0.85");
+    [speed, setSpeed] = useState("0.85"),
+    [mode,setMode] = useState("audio"),
+    [audioStatus,setAudioStatus] = useState(null),
+    [rangeStart,setRangeStart] = useState(0),
+    [rangeEnd,setRangeEnd] = useState(180);
   const paragraphs = result ? studyParagraphs(result.segments) : [];
   const turns = result ? studyTurns(result.segments) : [];
   const exportText = view === "paragraph" ? paragraphs.map(p=>p.text).join("\n\n") : turns.map(t=>`${t.speaker}: ${t.text}`).join("\n");
@@ -38,6 +42,11 @@ export default function YoutubeReader() {
     } catch(error) {setError(error.message);}
   };
   const request = useRef(null);
+  useEffect(()=>{
+    const controller=new AbortController();
+    fetch('/api/youtube/audio/status',{signal:controller.signal}).then(r=>r.ok?r.json():Promise.reject()).then(setAudioStatus).catch(()=>{});
+    return ()=>controller.abort();
+  },[]);
   useEffect(() => () => {request.current?.abort(); window.speechSynthesis?.cancel();}, []);
   useEffect(() => {window.speechSynthesis?.cancel();}, [view]);
   const submit = async (event) => {
@@ -47,15 +56,16 @@ export default function YoutubeReader() {
     setNotice("");
     window.speechSynthesis?.cancel();
     setResult(null);
+    setView("paragraph");
     setStart(null);
     setLoading(true);
     const controller = new AbortController();
     request.current = controller;
     try {
-      const response = await fetch("/api/youtube/transcript", {
+      const response = await fetch(mode === "audio" ? "/api/youtube/audio" : "/api/youtube/transcript", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url, language }),
+        body: JSON.stringify(mode === "audio" ? {url,start:rangeStart,end:rangeEnd} : { url, language }),
         signal: controller.signal,
       });
       if (!response.headers.get("content-type")?.includes("application/json"))
@@ -65,6 +75,7 @@ export default function YoutubeReader() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Chưa lấy được phụ đề.");
       setResult(data);
+      if(data.range?.start>0)setStart(data.range.start);
     } catch (error) {
       if (error.name !== "AbortError") setError(error.message);
     } finally {
@@ -95,8 +106,13 @@ export default function YoutubeReader() {
       <div className="page-title">
         <span className="eyebrow dark">HỌC QUA VIDEO THẬT</span>
         <h1>YouTube → Văn bản</h1>
-        <p>Dán link YouTube để tạo đoạn văn hoặc các lượt nói, nghe và luyện đọc theo.</p>
+        <p>Dán link YouTube, chọn đoạn clip để AI nghe và chép lời thành đoạn văn bên dưới.</p>
       </div>
+      <div className="filters" aria-label="Cách chép lời video">
+        <button className={mode==='audio'?'active':''} disabled={loading} onClick={()=>{setMode('audio');setError('');}}>Nghe clip và chép lời</button>
+        <button className={mode==='captions'?'active':''} disabled={loading} onClick={()=>{setMode('captions');setError('');}}>Lấy phụ đề miễn phí</button>
+      </div>
+      {mode==='audio'&&audioStatus&&!audioStatus.configured&&<div className="ai-config-note" role="status">Chép lời từ âm thanh cần khóa Gemini. Thêm GEMINI_API_KEY vào Biến môi trường Vibehost, lưu rồi triển khai lại. Link Gemini trên Google không cung cấp quyền API cho website.</div>}
       <form className="youtube-form" onSubmit={submit}>
         <label htmlFor="youtube-url">Link YouTube</label>
         <input
@@ -108,7 +124,7 @@ export default function YoutubeReader() {
           placeholder="https://www.youtube.com/watch?v=…"
           disabled={loading}
         />
-        <label htmlFor="youtube-language">Ngôn ngữ phụ đề</label>
+        {mode==='captions'&&<><label htmlFor="youtube-language">Ngôn ngữ phụ đề</label>
         <select
           id="youtube-language"
           value={language}
@@ -118,15 +134,20 @@ export default function YoutubeReader() {
           <option value="en">Tiếng Anh</option>
           <option value="vi">Tiếng Việt</option>
           <option value="auto">Ngôn ngữ gốc</option>
-        </select>
+        </select></>}
+        {mode==='audio'&&<div className="youtube-audio-range">
+          <label>Bắt đầu (giây)<input type="number" min="0" max="28799" step="1" required value={rangeStart} disabled={loading} onChange={e=>setRangeStart(e.target.value===''?'':Number(e.target.value))}/></label>
+          <label>Kết thúc (giây)<input type="number" min="1" max="28800" step="1" required value={rangeEnd} disabled={loading} onChange={e=>setRangeEnd(e.target.value===''?'':Number(e.target.value))}/></label>
+          <p className="note">Mỗi lượt tối đa 180 giây (3 phút). Chọn đoạn tiếp theo để học tiếp. Chép nguyên ngôn ngữ người nói, không tự dịch.</p>
+        </div>}
         <button
           className="primary"
-          disabled={loading || !url.trim()}
+          disabled={loading || !url.trim() || (mode==='audio'&&audioStatus?.configured===false)}
           type="submit"
         >
-          {loading ? "Đang lấy phụ đề…" : "Lấy văn bản"}
+          {loading ? (mode==='audio'?"Đang nghe clip và chép lời…":"Đang lấy phụ đề…") : mode==='audio'?"Nghe clip và tạo đoạn văn":"Lấy văn bản"}
         </button>
-        <p className="note">Lấy phụ đề miễn phí từ video. Phụ đề tự động có thể sai; video không có phụ đề chưa hỗ trợ chuyển âm thanh thành chữ.</p>
+        <p className="note">{mode==='audio'?'Dùng Gemini để nghe âm thanh video công khai. Bản chép bằng AI có thể sai; hãy đối chiếu video gốc. Lượt gọi dùng quota/chi phí theo tài khoản Gemini.':'Lấy phụ đề miễn phí có sẵn của YouTube; phụ đề có thể bị YouTube giới hạn truy cập.'}</p>
       </form>
       {error && (
         <p className="youtube-error" role="alert">
@@ -159,7 +180,7 @@ export default function YoutubeReader() {
             {result.segments.length} đoạn · {result.language} ·{" "}
             {result.source === "youtube-auto-captions"
               ? "Phụ đề tự động, có thể có sai sót"
-              : result.source === "user-pasted" ? "Văn bản bạn đã dán" : "Phụ đề từ video"}
+              : result.source === "user-pasted" ? "Văn bản bạn đã dán" : result.source === "gemini-audio" ? `Chép lời từ âm thanh bằng Gemini · giây ${result.range.start}–${result.range.end}` : "Phụ đề từ video"}
           </p>
           {result.videoId && <iframe
             key={`${result.videoId}-${seekCount}`}
@@ -174,16 +195,19 @@ export default function YoutubeReader() {
             <button className="outline" onClick={()=>window.speechSynthesis?.cancel()}>Dừng đọc</button>
           </div>
           <p className="note">Đọc thành tiếng dùng giọng của trình duyệt. Hãy nghe video gốc để đối chiếu cách phát âm. Tên người nói chỉ được giữ khi có trong phụ đề.</p>
+          <h2>{result.source==='gemini-audio'?'Bản chép lời từ clip':'Bài đọc từ phụ đề'}</h2>
+          {result.source==='gemini-audio'&&<p className="note">Văn bản và mốc thời gian do AI nhận dạng, có thể chưa chính xác. Nhấn Nghe từ video để đối chiếu.</p>}
           <div className="youtube-study-text">
             {(view === "paragraph" ? paragraphs : turns).map((part,i)=>(
               <article key={i} className={view === "dialogue" ? "youtube-turn" : "youtube-paragraph"}>
                 {view === "dialogue" && <strong>{part.speaker}</strong>}
                 <p lang={result.language}>{part.text}</p>
-                <button className="outline" onClick={()=>read(part.text)} aria-label={`Đọc đoạn ${i+1}`}><Volume2 size={16}/>Nghe và đọc theo</button>
+                {result.videoId&&part.offset!=null&&<button className="outline" onClick={()=>{setStart(part.offset);setSeekCount(n=>n+1);}}><Play size={16}/>Nghe từ video</button>}
+                <button className="outline" onClick={()=>read(part.text)} aria-label={`Đọc đoạn ${i+1}`}><Volume2 size={16}/>Đọc mẫu bằng giọng máy</button>
               </article>
             ))}
           </div>
-          <details className="youtube-timeline"><summary>Phụ đề gốc và mốc thời gian</summary>
+          <details className="youtube-timeline"><summary>{result.source==='gemini-audio'?'Các câu và mốc thời gian AI nhận dạng':'Phụ đề gốc và mốc thời gian'}</summary>
           <div className="transcript-segments">
             {result.segments.map((segment, i) => (
               <article key={i}>

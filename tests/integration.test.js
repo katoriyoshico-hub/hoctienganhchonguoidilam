@@ -797,9 +797,9 @@ test("release diagnostics report real database counts and avoid caching the HTML
   const info = await fetch(origin + "/api/version");
   assert.equal(info.status, 200);
   assert.equal(info.headers.get("cache-control"), "no-store");
-  assert.equal(info.headers.get("x-ct-speak-version"), "1.7.1");
+  assert.equal(info.headers.get("x-ct-speak-version"), "1.8.0");
   const version = await info.json();
-  assert.equal(version.version, "1.7.1");
+  assert.equal(version.version, "1.8.0");
   assert.equal(version.lessons, 87);
   assert.equal(version.scenarios, 82);
   assert.equal(version.phrases, 1107);
@@ -809,7 +809,7 @@ test("release diagnostics report real database counts and avoid caching the HTML
     assert.equal(response.status, 200);
     assert.ok(response.headers.get("cache-control").includes("no-store"));
     if (path === "/app-version.json")
-      assert.equal((await response.json()).version, "1.7.1");
+      assert.equal((await response.json()).version, "1.8.0");
   }
 });
 
@@ -818,7 +818,7 @@ test("home and lesson library show illustrations and the visible release label",
   try {
     const document = dom.window.document;
     assert.ok(
-      document.querySelector(".sidebar-bottom").textContent.includes("1.7.1"),
+      document.querySelector(".sidebar-bottom").textContent.includes("1.8.0"),
     );
     const heroImage = document.querySelector(".hero-visual img");
     assert.ok(heroImage && heroImage.getAttribute("alt"));
@@ -1016,6 +1016,7 @@ test("YouTube reader submits URL, shows timed transcript, copies text and report
     const document = dom.window.document;
     click(dom, "YouTube → Văn bản");
     await waitFor(() => document.querySelector(".youtube-form"));
+    click(dom,"Lấy phụ đề miễn phí");
     const input = document.querySelector("#youtube-url");
     const type = (value) => {
       Object.getOwnPropertyDescriptor(
@@ -1072,6 +1073,8 @@ test("YouTube reader submits URL, shows timed transcript, copies text and report
     await waitFor(()=>document.querySelector('.youtube-result'));
     assert.ok(document.body.textContent.includes('Văn bản bạn đã dán'));
     assert.equal(document.querySelector('.youtube-result iframe'),null);
+    click(dom,'Các lượt nói');
+    await waitFor(()=>document.querySelector('.youtube-turn strong'));
     assert.equal(document.querySelector('.youtube-turn strong').textContent,'Alex');
     assert.equal(calls.length,2);
   } finally {
@@ -1275,4 +1278,30 @@ test('Gemini web mode allows typing and microphone without a key and copies a re
   assert.equal(document.querySelector('.ai-message'),null);
   assert.ok(document.querySelector('[aria-label="Tình huống gửi sang Gemini"]').value.includes('appointment'));
  }finally{dom.window.close();}
+});
+
+test('YouTube audio mode displays the heard speech as paragraphs below the video',async()=>{
+ const calls=[];
+ const audioServer=createApp(pool,{audioTranscriptProvider:async(id,range)=>{calls.push({id,range});return {language:'en',segments:[{text:'Good morning. Welcome to our shop.',offset:10,duration:4},{text:'I would like to buy a gift.',offset:15,duration:3}]};}}).listen(0,'127.0.0.1');
+ await once(audioServer,'listening');const base=`http://127.0.0.1:${audioServer.address().port}`;
+ const dom=await browser(cookie,base);
+ try{
+  const document=dom.window.document;click(dom,'YouTube → Văn bản');
+  await waitFor(()=>document.querySelector('.youtube-audio-range'));
+  const type=(input,value)=>{Object.getOwnPropertyDescriptor(dom.window.HTMLInputElement.prototype,'value').set.call(input,value);input.dispatchEvent(new dom.window.Event('input',{bubbles:true}));};
+  type(document.querySelector('#youtube-url'),'https://youtu.be/abcdefghijk');
+  const rangeInputs=document.querySelectorAll('.youtube-audio-range input');type(rangeInputs[0],'10');type(rangeInputs[1],'60');
+  await waitFor(()=>!document.querySelector('.youtube-form .primary').disabled);
+  document.querySelector('.youtube-form').dispatchEvent(new dom.window.Event('submit',{bubbles:true,cancelable:true}));
+  await waitFor(()=>document.querySelector('.youtube-study-text'));
+  assert.deepEqual(calls[0],{id:'abcdefghijk',range:{start:10,end:60}});
+  assert.ok(document.querySelector('.youtube-study-text').textContent.includes('Good morning. Welcome to our shop. I would like to buy a gift.'));
+  assert.ok(document.querySelector('.youtube-result').textContent.includes('Chép lời từ âm thanh bằng Gemini'));
+  assert.ok(document.querySelector('.youtube-result iframe').compareDocumentPosition(document.querySelector('.youtube-study-text'))&dom.window.Node.DOCUMENT_POSITION_FOLLOWING);
+  assert.ok(document.querySelector('.youtube-result iframe').src.includes('start=10'));
+  click(dom,'Nghe từ video');
+  assert.equal(document.querySelectorAll('.youtube-paragraph').length,1);
+  const invalid=await fetch(base+'/api/youtube/audio',{method:'POST',headers:{'Content-Type':'application/json',Cookie:cookie},body:JSON.stringify({url:'https://example.com',start:0,end:180})});
+  assert.equal(invalid.status,400);assert.equal(calls.length,1);
+ }finally{dom.window.close();await new Promise(resolve=>audioServer.close(resolve));}
 });

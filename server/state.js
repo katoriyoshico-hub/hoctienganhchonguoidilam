@@ -5,7 +5,7 @@ function invalid(res) {
 }
 export function registerState(app, pool) {
   app.use("/api", async (req, res, next) => {
-    if (!req.path.startsWith("/state") && !req.path.startsWith("/sessions") && !req.path.startsWith("/ai"))
+    if (!req.path.startsWith("/state") && !req.path.startsWith("/sessions") && !req.path.startsWith("/ai") && !req.path.startsWith("/youtube/audio"))
       return next();
     // Reject cross-origin mutations; anonymous identity remains in an HttpOnly cookie.
     if (
