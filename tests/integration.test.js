@@ -1,6 +1,7 @@
 import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
 import { once } from "node:events";
+import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import pg from "pg";
 import { JSDOM } from "jsdom";
@@ -50,7 +51,7 @@ test("deployment starts on an empty database and restarts without reseeding", as
       `http://127.0.0.1:${restarted.address().port}/api/catalog`,
     );
     assert.equal(response.status, 200);
-    assert.equal((await response.json()).lessons.length, 8);
+    assert.equal((await response.json()).lessons.length, 23);
   } finally {
     await new Promise((resolve) => restarted.close(resolve));
   }
@@ -96,9 +97,9 @@ test("all ten PRD tables exist; migrations repeat without duplicating content", 
   ])
     assert.ok(rows.some((r) => r.table_name === table));
   const result = await request("/api/catalog");
-  assert.equal(result.body.lessons.length, 8);
-  assert.equal(result.body.scenarios.length, 3);
-  assert.equal(result.body.lessons.flatMap((l) => l.phrases).length, 18);
+  assert.equal(result.body.lessons.length, 23);
+  assert.equal(result.body.scenarios.length, 18);
+  assert.equal(result.body.lessons.flatMap((l) => l.phrases).length, 108);
   assert.ok(
     result.body.scenarios.every(
       (s) => s.lines.length === 4 && s.hints.length === 4,
@@ -255,7 +256,7 @@ test("built frontend loads API content and saves learning changes without localS
   const dom = await browser(cookie);
   try {
     const document = dom.window.document;
-    assert.ok(document.body.textContent.includes("18"));
+    assert.ok(document.body.textContent.includes("108"));
     click(dom, "Bài học");
     await waitFor(() => document.querySelector(".lesson-grid"));
     assert.ok(document.body.textContent.includes("Database-backed lesson"));
@@ -307,6 +308,35 @@ test("built frontend loads API content and saves learning changes without localS
         !document.querySelector("fieldset").disabled,
     );
     assert.equal((await request("/api/state")).body.sessions.length, 2);
+    click(dom, "Bài học");
+    await waitFor(() => document.querySelector(".lesson-grid"));
+    click(dom, "Gói quà và đóng gói");
+    await waitFor(() => document.querySelector(".vocabulary"));
+    assert.equal(document.querySelectorAll(".vocabulary-item").length, 3);
+    assert.ok(
+      document.querySelector(".vocabulary").textContent.includes("bubble wrap"),
+    );
+    assert.ok(
+      document
+        .querySelector(".vocabulary")
+        .textContent.includes("màng bọc chống sốc"),
+    );
+    click(dom, "Hội thoại");
+    await waitFor(() => document.querySelector(".chat-panel"));
+    click(dom, "Hỏi người bản địa đường đến tháp Eiffel");
+    await waitFor(() =>
+      document.querySelector(".scenario-context").textContent.includes("Paris"),
+    );
+    assert.ok(
+      document
+        .querySelector(".scenario-context")
+        .textContent.includes("Du khách"),
+    );
+    assert.ok(
+      document
+        .querySelector(".chat-bottom")
+        .textContent.includes("Eiffel Tower"),
+    );
     assert.equal(dom.window.localStorage.length, 0);
   } finally {
     dom.window.close();
@@ -341,5 +371,114 @@ test("database errors produce a failure response instead of false success", asyn
     assert.ok(!(await response.text()).includes("private connection info"));
   } finally {
     await new Promise((r) => broken.close(r));
+  }
+});
+
+test("new content covers sales, landmarks and souvenirs with vocabulary and review persistence", async () => {
+  const { body: catalog } = await request("/api/catalog");
+  assert.equal(catalog.lessons.flatMap((l) => l.vocabulary).length, 45);
+  for (const id of [
+    105, 106, 107, 108, 109, 205, 206, 207, 208, 209, 210, 211, 212, 213, 214,
+  ]) {
+    const lesson = catalog.lessons.find((l) => l.id === id);
+    assert.equal(lesson.phrases.length, 6);
+    assert.equal(lesson.vocabulary.length, 3);
+    assert.ok(
+      lesson.phrases.every(
+        (p) =>
+          p.length === 3 &&
+          p.every((value) => typeof value === "string" && value.length > 0),
+      ),
+    );
+  }
+  for (const landmark of ["Eiffel", "Louvre", "Colosseum", "Kyoto"])
+    assert.ok(catalog.lessons.some((l) => l.title.includes(landmark)));
+  assert.equal(catalog.lessons.find((l) => l.id === 105).cat, "work");
+  assert.equal(catalog.lessons.find((l) => l.id === 214).cat, "travel");
+  assert.equal(
+    (
+      await request(
+        "/api/state/reviews",
+        { lessonId: 214, phraseIndex: 3, rating: "good" },
+        "PUT",
+      )
+    ).status,
+    200,
+  );
+  assert.equal(
+    (await request("/api/state")).body.reviews["214-3"].rating,
+    "good",
+  );
+});
+
+test("upgrading an existing database preserves previous lessons and learner progress", async () => {
+  const upgradeName = `${name}_upgrade`;
+  await admin.query(`CREATE DATABASE ${upgradeName}`);
+  const url = new URL(process.env.DATABASE_URL);
+  url.pathname = "/" + upgradeName;
+  const existing = new pg.Pool({ connectionString: url.href });
+  let upgradedServer;
+  try {
+    await existing.query(
+      "CREATE TABLE schema_migrations (name TEXT PRIMARY KEY, checksum TEXT NOT NULL, applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW())",
+    );
+    for (const filename of [
+      "001_schema.sql",
+      "002_content.sql",
+      "003_state_constraints.sql",
+    ]) {
+      const sql = await readFile(
+        new URL(`../db/migrations/${filename}`, import.meta.url),
+        "utf8",
+      );
+      await existing.query(sql);
+      await existing.query(
+        "INSERT INTO schema_migrations(name,checksum) VALUES($1,$2)",
+        [filename, createHash("sha256").update(sql).digest("hex")],
+      );
+    }
+    const {
+      rows: [user],
+    } = await existing.query(
+      "INSERT INTO users (full_name,email,primary_goal) VALUES ('Existing learner','existing@example.test','BOTH') RETURNING user_id",
+    );
+    await existing.query(
+      "INSERT INTO user_progress (user_id,lesson_id,status,completion_percentage) VALUES ($1,101,'COMPLETED',100)",
+      [user.user_id],
+    );
+    await existing.query(
+      "UPDATE lessons SET title = 'Existing custom title' WHERE lesson_id = 101",
+    );
+    upgradedServer = await startServer({ pool: existing, port: 0 });
+    await migrate(existing);
+    assert.equal(
+      (await existing.query("SELECT COUNT(*)::int AS n FROM lessons")).rows[0]
+        .n,
+      23,
+    );
+    assert.equal(
+      (await existing.query("SELECT COUNT(*)::int AS n FROM phrases")).rows[0]
+        .n,
+      108,
+    );
+    assert.equal(
+      (await existing.query("SELECT title FROM lessons WHERE lesson_id=101"))
+        .rows[0].title,
+      "Existing custom title",
+    );
+    assert.equal(
+      (
+        await existing.query(
+          "SELECT status FROM user_progress WHERE user_id=$1 AND lesson_id=101",
+          [user.user_id],
+        )
+      ).rows[0].status,
+      "COMPLETED",
+    );
+  } finally {
+    if (upgradedServer)
+      await new Promise((resolve) => upgradedServer.close(resolve));
+    await existing.end();
+    await admin.query(`DROP DATABASE ${upgradeName}`);
   }
 });

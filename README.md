@@ -68,7 +68,7 @@ NODE_ENV=production npm start
 
 Cấu hình `DATABASE_URL` tới PostgreSQL có xác thực; giữ chuỗi kết nối ở máy chủ, không đưa vào frontend. Máy chủ mặc định lắng nghe trên `0.0.0.0` và dùng cổng trong biến `PORT`; địa chỉ lắng nghe không bị biến `HOST` của nền tảng ghi đè khi triển khai container và cung cấp HTTPS qua reverse proxy. Khi `NODE_ENV=production`, cookie chỉ gửi qua HTTPS. API phục vụ cả `dist`; frontend tĩnh trên Vercel/Netlify riêng cần cấu hình proxy `/api` tới backend. Không thể triển khai đầy đủ chỉ bằng việc tải `dist` lên hosting tĩnh.
 
-Phát âm và nhận diện giọng nói vẫn dùng Web Speech API, phụ thuộc trình duyệt, quyền microphone và có thể cần mạng. Hội thoại vẫn dựa trên kịch bản trong CSDL; chưa có AI sinh phản hồi hay chấm phát âm. Lịch ôn hiện giữ quy tắc 10 phút / 1 ngày / 4 ngày, chưa triển khai SM-2 đầy đủ. Lộ trình hiện có 8 bài; không tuyên bố đáp ứng toàn bộ tiêu chí sản phẩm trong PRD.
+Phát âm và nhận diện giọng nói vẫn dùng Web Speech API, phụ thuộc trình duyệt, quyền microphone và có thể cần mạng. Hội thoại vẫn dựa trên kịch bản trong CSDL; chưa có AI sinh phản hồi hay chấm phát âm. Lịch ôn hiện giữ quy tắc 10 phút / 1 ngày / 4 ngày, chưa triển khai SM-2 đầy đủ. Lộ trình hiện có 23 bài; không tuyên bố đáp ứng toàn bộ tiêu chí sản phẩm trong PRD.
 
 ## Triển khai trên Vibehost
 
@@ -85,3 +85,15 @@ Kiểm thử triển khai sử dụng CSDL trống, chạy đúng hàm khởi đ
 ### Health check báo chỉ nghe ở 127.0.0.1
 
 `npm start` luôn lắng nghe trên `0.0.0.0`, kể cả khi nền tảng đặt `HOST=127.0.0.1` hoặc `HOST=localhost`. Cổng vẫn lấy từ `PORT`. Vite dev/preview cũng được cấu hình lắng nghe trên `0.0.0.0`; lệnh chạy website có backend là `npm start`. Nhật ký khởi động ghi rõ địa chỉ và cổng để đối chiếu với health check. Sau khi cập nhật mã nguồn, build lại và triển khai lại image mới; không tái sử dụng image cũ.
+
+## Nội dung bán hàng, tham quan và quà lưu niệm
+
+Migration `004_sales_sightseeing_souvenirs.sql` thêm 15 bài, 45 câu giao tiếp, 45 mục từ vựng và 15 kịch bản (60 lượt thoại). Tổng thư viện: **23 bài, 108 câu/từ vựng, 18 kịch bản và 72 lượt thoại**.
+
+- Bán hàng: hỏi nhu cầu/ngân sách, giới thiệu sản phẩm, báo giá/giảm giá, chốt đơn/thanh toán, đổi trả/chăm sóc sau mua.
+- Tham quan: hỏi đường tới tháp Eiffel, mua vé và hỏi quy định tại Louvre, hỏi hướng dẫn viên tại Colosseum, ứng xử khi tham quan đền ở Kyoto, nhờ người bản địa gợi ý điểm ngắm cảnh và chụp ảnh.
+- Quà lưu niệm: chọn quà cho gia đình, hỏi xuất xứ/chất liệu đồ thủ công, thương lượng giá lịch sự, thanh toán/kiểm tra tiền thừa, gói quà và bảo vệ đồ dễ vỡ.
+
+Mỗi bài mới có nghĩa tiếng Việt, IPA, mục từ vựng với nút nghe và nội dung ôn trong Flashcards. Hội thoại hiển thị vai của người học cùng bối cảnh. Các câu hỏi ở địa điểm nổi tiếng dùng để luyện giao tiếp, không cung cấp giá vé/lịch mở cửa hoặc quy định du lịch hiện hành.
+
+Triển khai lại từ `main`; `npm start` tự áp dụng migration mới. Không xóa CSDL, không sửa migration cũ; bài học cũ và tiến độ đã lưu được giữ nguyên.

@@ -343,8 +343,10 @@ function App({ lessons, scenarios, initialState }) {
                       <Briefcase />
                     </span>
                     <span>
-                      <b>Tiếng Anh tư vấn</b>
-                      <small>Gặp gỡ khách hàng, báo giá, xử lý yêu cầu</small>
+                      <b>Tiếng Anh tư vấn & bán hàng</b>
+                      <small>
+                        Chào khách, giới thiệu sản phẩm, chốt đơn và đổi trả
+                      </small>
                       <em>Khám phá bài học →</em>
                     </span>
                   </button>
@@ -360,7 +362,9 @@ function App({ lessons, scenarios, initialState }) {
                     </span>
                     <span>
                       <b>Tiếng Anh du lịch</b>
-                      <small>Sân bay, khách sạn, nhà hàng và di chuyển</small>
+                      <small>
+                        Tham quan, giao tiếp với người bản địa và mua quà
+                      </small>
                       <em>Khám phá bài học →</em>
                     </span>
                   </button>
@@ -395,7 +399,7 @@ function App({ lessons, scenarios, initialState }) {
                 <div className="filters">
                   {[
                     ["all", "Tất cả"],
-                    ["work", "Tư vấn công việc"],
+                    ["work", "Tư vấn & bán hàng"],
                     ["travel", "Du lịch"],
                   ].map(([c, t]) => (
                     <button
@@ -484,6 +488,34 @@ function App({ lessons, scenarios, initialState }) {
                       </p>
                     </div>
                   )}
+                  {active.vocabulary?.length > 0 && (
+                    <section
+                      className="vocabulary"
+                      aria-label="Từ vựng theo tình huống"
+                    >
+                      <h3>Từ vựng theo tình huống</h3>
+                      <p>
+                        Ôn nghĩa và nghe phát âm. Những từ này cũng có trong
+                        Flashcards.
+                      </p>
+                      <div className="vocabulary-grid">
+                        {active.vocabulary.map(([word, meaning, ipa]) => (
+                          <article key={word} className="vocabulary-item">
+                            <strong>{word}</strong>
+                            <span>{ipa}</span>
+                            <p>{meaning}</p>
+                            <button
+                              className="outline"
+                              onClick={() => speak(word)}
+                              aria-label={`Nghe từ ${word}`}
+                            >
+                              <Volume2 size={16} /> Nghe
+                            </button>
+                          </article>
+                        ))}
+                      </div>
+                    </section>
+                  )}
                   <div className="lesson-footer">
                     <span>
                       {idx + 1} / {active.phrases.length} mẫu câu
@@ -531,6 +563,12 @@ function App({ lessons, scenarios, initialState }) {
                       {s.title}
                     </button>
                   ))}
+                </div>
+                <div className="scenario-context">
+                  <p>
+                    <strong>Vai của bạn:</strong> {scenario.userRole}
+                  </p>
+                  <p>{scenario.briefing}</p>
                 </div>
                 <div className="chat-panel">
                   <div className="chat-header">
@@ -672,7 +710,7 @@ function App({ lessons, scenarios, initialState }) {
                     }}
                   >
                     <option value="both">Tư vấn & Du lịch</option>
-                    <option value="work">Tư vấn công việc</option>
+                    <option value="work">Tư vấn & bán hàng</option>
                     <option value="travel">Du lịch quốc tế</option>
                   </select>
                   <h2>Bài học đã hoàn thành</h2>

@@ -19,11 +19,13 @@ export function createApp(pool) {
         SELECT l.lesson_id AS id, CASE m.category WHEN 'WORKPLACE_CONSULTING' THEN 'work' ELSE 'travel' END AS cat,
           l.title, l.target_situation AS "desc",
           (SELECT COALESCE(json_agg(json_build_array(p.english_text, p.vietnamese_meaning, p.ipa_phonetic) ORDER BY p.phrase_id), '[]'::json)
-            FROM phrases p WHERE p.lesson_id = l.lesson_id) AS phrases
+            FROM phrases p WHERE p.lesson_id = l.lesson_id) AS phrases,
+          (SELECT COALESCE(json_agg(json_build_array(p.english_text, p.vietnamese_meaning, p.ipa_phonetic) ORDER BY p.phrase_id), '[]'::json)
+            FROM phrases p WHERE p.lesson_id = l.lesson_id AND p.context_note = 'VOCABULARY') AS vocabulary
         FROM lessons l JOIN modules m USING(module_id) WHERE m.is_active
       ) l) AS lessons,
       (SELECT COALESCE(json_agg(s ORDER BY s.id), '[]'::json) FROM (
-        SELECT s.scenario_id AS id, s.title, s.ai_role_name AS role,
+        SELECT s.scenario_id AS id, s.title, s.ai_role_name AS role, s.user_role_name AS "userRole", s.context_briefing AS briefing,
           CASE m.category WHEN 'WORKPLACE_CONSULTING' THEN 'work' ELSE 'travel' END AS cat,
           (SELECT COALESCE(json_agg(t.bot_reaction_rules ORDER BY t.step_order), '[]'::json) FROM scenario_turns t WHERE t.scenario_id = s.scenario_id) AS lines,
           (SELECT COALESCE(json_agg(t.suggested_sample_phrases[1] ORDER BY t.step_order), '[]'::json) FROM scenario_turns t WHERE t.scenario_id = s.scenario_id) AS hints
