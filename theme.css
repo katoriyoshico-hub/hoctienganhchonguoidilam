@@ -91,18 +91,17 @@ button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-v
   .lesson-card:hover, .conversation-preview:hover { transform: none; }
 }
 
-/* Vivid colour fields and original decorative artwork for the page background. */
-:root { --violet: #6833d2; --outline: #d9c7f3; }
+/* Original anime scenery with a light veil behind readable learning surfaces. */
+:root { --violet: #7050bb; --outline: #d7c7ee; }
 .app > main {
   background-color: #f5efff;
   background-image:
-    url('/illustrations/playful-backdrop.svg'),
-    radial-gradient(ellipse at 96% 0%, #f8acd975 0, transparent 48%),
-    radial-gradient(ellipse at 0% 72%, #72e6cd66 0, transparent 48%),
-    radial-gradient(ellipse at 60% 96%, #ffcd9966 0, transparent 44%),
-    linear-gradient(145deg, #f0e6ff 0%, #faf3ff 45%, #e9fff6 100%);
-  background-size: cover, auto, auto, auto, auto;
+    linear-gradient(180deg, #fff7fd55, #f3f3ff99),
+    url('/illustrations/anime-sakura-background.png');
+  background-size: cover, cover;
+  background-position: center, center;
   background-repeat: no-repeat;
+  background-attachment: fixed, fixed;
 }
 .sidebar { background: linear-gradient(165deg, #fff 5%, #fff5fb 55%, #ebe4ff); }
 .brandicon { background: linear-gradient(135deg, #7236df, #d950a3); box-shadow: 4px 4px 0 #cfeddc; }
@@ -122,8 +121,20 @@ header { background: #fffffff2; border-bottom-color: #dac8f0; }
 .quick { background: linear-gradient(110deg,#fff0f7,#fff6e8); border-color: #f0c3d6; }
 .lesson-card:hover, .conversation-preview:hover { border-color: #af84dd; box-shadow: 6px 9px 0 #ceb8ee; }
 @media(max-width:650px) {
-  .app > main { background-size: auto 850px, auto, auto, auto, auto; background-position: center top; }
+  .app > main { background-size: cover, auto 100vh; background-position: center, 65% top; background-attachment: scroll, scroll; }
 }
 
 .brand strong { font-size: 18px; line-height: 1.3; display: block; }
 .brandicon { flex-shrink: 0; }
+
+/* Sakura pink and sky blue accents complement the anime illustrations. */
+.sidebar { background: linear-gradient(165deg, #fffafdf5, #fce8f4f5 60%, #e9eefff5); }
+.brandicon { background: linear-gradient(135deg, #7465c8, #db79ac); box-shadow: 4px 4px 0 #dcecff; }
+.sidebar nav button.selected { background: #f4e2f4; color: #57357f; border-color: #d8b7e4; box-shadow: 4px 4px 0 #c5e5f7; }
+.hero { background: linear-gradient(125deg, #453375, #7351a3 65%, #b067a0); border-color: #a187c5; box-shadow: 7px 9px 0 #d9c9f0; }
+.hero .primary { background: #fff0dd; color: #4b2e78; }
+.primary { background: linear-gradient(115deg, #6950b0, #965caa); }
+.stat:nth-child(1) { border-top-color: #ab89db; }
+.stat:nth-child(2) { border-top-color: #78bad5; background: linear-gradient(150deg, #fff 65%, #e8f7ff); }
+.stat:nth-child(3) { border-top-color: #e68bb4; }
+.page-title, .section-head { text-shadow: 0 1px 8px #fff; }

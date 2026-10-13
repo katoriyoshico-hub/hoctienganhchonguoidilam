@@ -469,7 +469,7 @@ function App({ fields, lessons, scenarios, listeningExercises, initialState }) {
                   </div>
                   <div className="hero-visual">
                     <img
-                      src="/illustrations/hero-conversation-vivid.png"
+                      src="/illustrations/anime-conversation-hero.png"
                       alt="Hai người bạn trò chuyện vui vẻ tại quán cà phê, cùng xem bản đồ du lịch dưới ánh nắng"
                       width="1536"
                       height="1024"
