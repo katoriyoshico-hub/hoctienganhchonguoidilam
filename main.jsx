@@ -171,7 +171,10 @@ function ListeningPractice({ exercises, speak }) {
             Câu {index + 1}/{filtered.length} · Đúng {correct}/{completed}
           </p>
           <h2>{exercise.lessonTitle}</h2>
-          <p className="listening-situation">{exercise.situation}</p>
+          <div className="listening-situation bilingual-listening">
+            <div lang="en"><span className="bilingual-label">English</span><p>{exercise.situationEn}</p></div>
+            <div lang="vi"><span className="bilingual-label">Tiếng Việt</span><p>{exercise.situation}</p></div>
+          </div>
           <div className="practice-actions">
             <button className="primary" onClick={() => play(0.82)}>
               <Volume2 size={18} /> Nghe tình huống
@@ -213,7 +216,10 @@ function ListeningPractice({ exercises, speak }) {
               <p>
                 <b>{exercise.word}</b> {exercise.ipa} — {exercise.meaning}
               </p>
-              <p className="listening-transcript">{exercise.spokenText}</p>
+              <div className="bilingual-listening listening-transcript-pair">
+                <div lang="en"><span className="bilingual-label">English</span><p className="listening-transcript">{exercise.spokenText}</p></div>
+                <div lang="vi"><span className="bilingual-label">Tiếng Việt</span><p className="listening-translation">{exercise.spokenTranslation}</p></div>
+              </div>
               <button
                 className="primary"
                 onClick={() => {

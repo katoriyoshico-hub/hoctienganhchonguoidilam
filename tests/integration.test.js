@@ -510,6 +510,7 @@ test("listening API returns 45 contextual exercises linked to vocabulary", async
     30,
   );
   for (const exercise of catalog.listeningExercises) {
+    assert.ok(exercise.situationEn && exercise.spokenTranslation);
     assert.ok(exercise.situation.startsWith("Giả sử"));
     assert.ok(
       exercise.spokenText.toLowerCase().includes(exercise.word.toLowerCase()),
@@ -544,6 +545,8 @@ test("listening quiz speaks the context, hides transcript, checks answers and re
     click(dom, "Luyện nghe từ vựng");
     await waitFor(() => document.querySelector(".listening-practice"));
     assert.equal(document.querySelector(".listening-transcript"), null);
+    assert.equal(document.querySelector('.listening-situation [lang="en"] p').textContent,catalog.listeningExercises[0].situationEn);
+    assert.equal(document.querySelector('.listening-situation [lang="vi"] p').textContent,catalog.listeningExercises[0].situation);
     assert.ok(
       [...document.querySelectorAll(".listening-choices button")].every(
         (b) => b.disabled,
@@ -565,6 +568,7 @@ test("listening quiz speaks the context, hides transcript, checks answers and re
     ].find((b) => b.textContent !== catalog.listeningExercises[0].meaning);
     wrong.click();
     await waitFor(() => document.querySelector(".listening-feedback"));
+    assert.equal(document.querySelector('.listening-translation').textContent,catalog.listeningExercises[0].spokenTranslation);
     assert.ok(
       document
         .querySelector(".listening-feedback")
@@ -790,19 +794,19 @@ test("release diagnostics report real database counts and avoid caching the HTML
   const info = await fetch(origin + "/api/version");
   assert.equal(info.status, 200);
   assert.equal(info.headers.get("cache-control"), "no-store");
-  assert.equal(info.headers.get("x-ct-speak-version"), "1.6.2");
+  assert.equal(info.headers.get("x-ct-speak-version"), "1.6.3");
   const version = await info.json();
-  assert.equal(version.version, "1.6.2");
+  assert.equal(version.version, "1.6.3");
   assert.equal(version.lessons, 87);
   assert.equal(version.scenarios, 82);
   assert.equal(version.phrases, 1107);
-  assert.equal(version.migration, "009_six_lessons_and_scenario_art.sql");
+  assert.equal(version.migration, "010_bilingual_listening.sql");
   for (const path of ["/", "/index.html", "/app-version.json"]) {
     const response = await fetch(origin + path);
     assert.equal(response.status, 200);
     assert.ok(response.headers.get("cache-control").includes("no-store"));
     if (path === "/app-version.json")
-      assert.equal((await response.json()).version, "1.6.2");
+      assert.equal((await response.json()).version, "1.6.3");
   }
 });
 
@@ -811,7 +815,7 @@ test("home and lesson library show illustrations and the visible release label",
   try {
     const document = dom.window.document;
     assert.ok(
-      document.querySelector(".sidebar-bottom").textContent.includes("1.6.2"),
+      document.querySelector(".sidebar-bottom").textContent.includes("1.6.3"),
     );
     const heroImage = document.querySelector(".hero-visual img");
     assert.ok(heroImage && heroImage.getAttribute("alt"));

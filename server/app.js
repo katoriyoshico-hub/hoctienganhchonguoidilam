@@ -65,7 +65,7 @@ export function createApp(pool, options = {}) {
       (SELECT COALESCE(json_agg(e ORDER BY e.id), '[]'::json) FROM (
         SELECT e.exercise_id AS id, l.lesson_id AS "lessonId", l.title AS "lessonTitle",
           CASE m.category WHEN 'TRAVEL_SURVIVAL' THEN 'travel' ELSE 'work' END AS cat,
-          e.situation, e.spoken_text AS "spokenText", p.english_text AS word,
+          e.situation, e.situation_en AS "situationEn", e.spoken_translation AS "spokenTranslation", e.spoken_text AS "spokenText", p.english_text AS word,
           p.vietnamese_meaning AS meaning, p.ipa_phonetic AS ipa
         FROM listening_exercises e JOIN phrases p USING(phrase_id)
         JOIN lessons l USING(lesson_id) JOIN modules m USING(module_id) WHERE m.is_active
