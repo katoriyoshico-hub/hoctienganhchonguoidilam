@@ -78,6 +78,7 @@ function Catalog() {
   if (!data) return <main role="status">Đang tải nội dung học…</main>;
   return (
     <App
+      fields={data.fields || []}
       lessons={data.lessons}
       scenarios={data.scenarios}
       listeningExercises={data.listeningExercises || []}
@@ -241,9 +242,11 @@ function ListeningPractice({ exercises, speak }) {
   );
 }
 
-function App({ lessons, scenarios, listeningExercises, initialState }) {
+function App({ fields, lessons, scenarios, listeningExercises, initialState }) {
   const [page, setPage] = useState("home"),
     [category, setCategory] = useState("all"),
+    [lessonField, setLessonField] = useState("all"),
+    [scenarioField, setScenarioField] = useState("all"),
     [done, setDone] = useState(initialState.done),
     [goal, setGoal] = useState(initialState.goal),
     [active, setActive] = useState(lessons[0]),
@@ -520,6 +523,7 @@ function App({ lessons, scenarios, listeningExercises, initialState }) {
                     className="path work"
                     onClick={() => {
                       setCategory("work");
+                      setLessonField("all");
                       navigate("lessons");
                     }}
                   >
@@ -527,9 +531,9 @@ function App({ lessons, scenarios, listeningExercises, initialState }) {
                       <Briefcase />
                     </span>
                     <span>
-                      <b>Tiếng Anh tư vấn & bán hàng</b>
+                      <b>Tiếng Anh công việc</b>
                       <small>
-                        Chào khách, giới thiệu sản phẩm, chốt đơn và đổi trả
+                        Công nghệ, y tế, giáo dục, tài chính và các ngành nghề
                       </small>
                       <em>Khám phá bài học →</em>
                     </span>
@@ -538,6 +542,7 @@ function App({ lessons, scenarios, listeningExercises, initialState }) {
                     className="path travel"
                     onClick={() => {
                       setCategory("travel");
+                      setLessonField("all");
                       navigate("lessons");
                     }}
                   >
@@ -616,21 +621,47 @@ function App({ lessons, scenarios, listeningExercises, initialState }) {
                 <div className="filters">
                   {[
                     ["all", "Tất cả"],
-                    ["work", "Tư vấn & bán hàng"],
+                    ["work", "Công việc"],
                     ["travel", "Du lịch"],
                   ].map(([c, t]) => (
                     <button
                       className={category === c ? "active" : ""}
-                      onClick={() => setCategory(c)}
+                      onClick={() => {
+                        setCategory(c);
+                        setLessonField("all");
+                      }}
                       key={c}
                     >
                       {t}
                     </button>
                   ))}
                 </div>
+                <label className="field-filter">
+                  Lĩnh vực
+                  <select
+                    aria-label="Lĩnh vực bài học"
+                    value={lessonField}
+                    onChange={(e) => {
+                      setLessonField(e.target.value);
+                      setCategory("all");
+                    }}
+                  >
+                    <option value="all">Tất cả lĩnh vực</option>
+                    {fields.map((f) => (
+                      <option key={f.id} value={f.id}>
+                        {f.title}
+                      </option>
+                    ))}
+                  </select>
+                </label>
                 <div className="lesson-grid">
                   {lessons
-                    .filter((l) => category === "all" || l.cat === category)
+                    .filter(
+                      (l) =>
+                        (category === "all" || l.cat === category) &&
+                        (lessonField === "all" ||
+                          String(l.fieldId) === lessonField),
+                    )
                     .map((l, i) => (
                       <button
                         className="lesson-card"
@@ -655,7 +686,9 @@ function App({ lessons, scenarios, listeningExercises, initialState }) {
                           {l.cat === "work" ? <Briefcase /> : <Plane />}
                         </div>
                         <div className="lesson-text">
-                          <span className="mini">BÀI {l.id} · 15 PHÚT</span>
+                          <span className="mini">
+                            {l.fieldTitle} · BÀI {l.id} · 15 PHÚT
+                          </span>
                           <h3>{l.title}</h3>
                           <p>{l.desc}</p>
                           <span
@@ -791,28 +824,74 @@ function App({ lessons, scenarios, listeningExercises, initialState }) {
                     Anh.
                   </p>
                 </div>
-                <details className="scenario-picker">
-                  <summary>
-                    Chọn tình huống: {scenario.title} · {scenarios.length} hội
-                    thoại
-                  </summary>
-                  <div className="filters">
-                    {scenarios.map((s, i) => (
-                      <button
-                        className={scenario === s ? "active" : ""}
-                        key={s.title}
-                        onClick={(event) => {
-                          event.currentTarget.closest("details").open = false;
-                          setScenario(s);
+                <label className="field-filter">
+                  Lĩnh vực hội thoại
+                  <select
+                    aria-label="Lĩnh vực hội thoại"
+                    value={scenarioField}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setScenarioField(value);
+                      if (
+                        value !== "all" &&
+                        String(scenario.fieldId) !== value
+                      ) {
+                        const next = scenarios.find(
+                          (s) => String(s.fieldId) === value,
+                        );
+                        if (next) {
+                          setScenario(next);
                           setSessionId(null);
                           setTurn(0);
                           setAnswers([]);
                           setHeard("");
-                        }}
-                      >
-                        {s.title}
-                      </button>
+                        }
+                      }
+                    }}
+                  >
+                    <option value="all">Tất cả lĩnh vực</option>
+                    {fields.map((f) => (
+                      <option key={f.id} value={f.id}>
+                        {f.title}
+                      </option>
                     ))}
+                  </select>
+                </label>
+                <details className="scenario-picker">
+                  <summary>
+                    Chọn tình huống: {scenario.title} ·{" "}
+                    {
+                      scenarios.filter(
+                        (s) =>
+                          scenarioField === "all" ||
+                          String(s.fieldId) === scenarioField,
+                      ).length
+                    }{" "}
+                    hội thoại
+                  </summary>
+                  <div className="filters">
+                    {scenarios
+                      .filter(
+                        (s) =>
+                          scenarioField === "all" ||
+                          String(s.fieldId) === scenarioField,
+                      )
+                      .map((s, i) => (
+                        <button
+                          className={scenario === s ? "active" : ""}
+                          key={s.title}
+                          onClick={(event) => {
+                            event.currentTarget.closest("details").open = false;
+                            setScenario(s);
+                            setSessionId(null);
+                            setTurn(0);
+                            setAnswers([]);
+                            setHeard("");
+                          }}
+                        >
+                          {s.title}
+                        </button>
+                      ))}
                   </div>
                 </details>
                 <div className="scenario-context">

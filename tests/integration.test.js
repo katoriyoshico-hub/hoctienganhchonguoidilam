@@ -53,7 +53,7 @@ test("deployment starts on an empty database and restarts without reseeding", as
       `http://127.0.0.1:${restarted.address().port}/api/catalog`,
     );
     assert.equal(response.status, 200);
-    assert.equal((await response.json()).lessons.length, 39);
+    assert.equal((await response.json()).lessons.length, 55);
   } finally {
     await new Promise((resolve) => restarted.close(resolve));
   }
@@ -99,9 +99,9 @@ test("all ten PRD tables exist; migrations repeat without duplicating content", 
   ])
     assert.ok(rows.some((r) => r.table_name === table));
   const result = await request("/api/catalog");
-  assert.equal(result.body.lessons.length, 39);
-  assert.equal(result.body.scenarios.length, 34);
-  assert.equal(result.body.lessons.flatMap((l) => l.phrases).length, 390);
+  assert.equal(result.body.lessons.length, 55);
+  assert.equal(result.body.scenarios.length, 50);
+  assert.equal(result.body.lessons.flatMap((l) => l.phrases).length, 550);
   assert.ok(
     result.body.scenarios.every(
       (s) => s.lines.length === 4 && s.hints.length === 4,
@@ -260,7 +260,7 @@ test("built frontend loads API content and saves learning changes without localS
   const dom = await browser(cookie);
   try {
     const document = dom.window.document;
-    assert.ok(document.body.textContent.includes("483"));
+    assert.ok(document.body.textContent.includes("691"));
     click(dom, "Bài học");
     await waitFor(() => document.querySelector(".lesson-grid"));
     assert.ok(document.body.textContent.includes("Database-backed lesson"));
@@ -391,7 +391,7 @@ test("database errors produce a failure response instead of false success", asyn
 
 test("new content covers sales, landmarks and souvenirs with vocabulary and review persistence", async () => {
   const { body: catalog } = await request("/api/catalog");
-  assert.equal(catalog.lessons.flatMap((l) => l.vocabulary).length, 93);
+  assert.equal(catalog.lessons.flatMap((l) => l.vocabulary).length, 141);
   for (const id of [
     105, 106, 107, 108, 109, 205, 206, 207, 208, 209, 210, 211, 212, 213, 214,
   ]) {
@@ -469,12 +469,12 @@ test("upgrading an existing database preserves previous lessons and learner prog
     assert.equal(
       (await existing.query("SELECT COUNT(*)::int AS n FROM lessons")).rows[0]
         .n,
-      39,
+      55,
     );
     assert.equal(
       (await existing.query("SELECT COUNT(*)::int AS n FROM phrases")).rows[0]
         .n,
-      483,
+      691,
     );
     assert.equal(
       (await existing.query("SELECT title FROM lessons WHERE lesson_id=101"))
@@ -626,9 +626,9 @@ test("listening quiz speaks the context, hides transcript, checks answers and re
   }
 });
 
-test("all 34 illustrated conversations contain two named characters and eight translated lines", async () => {
+test("all 50 illustrated conversations contain two named characters and eight translated lines", async () => {
   const { body: catalog } = await request("/api/catalog");
-  assert.equal(catalog.scenarios.length, 34);
+  assert.equal(catalog.scenarios.length, 50);
   const keys = new Set([
     "office",
     "phone",
@@ -808,19 +808,19 @@ test("release diagnostics report real database counts and avoid caching the HTML
   const info = await fetch(origin + "/api/version");
   assert.equal(info.status, 200);
   assert.equal(info.headers.get("cache-control"), "no-store");
-  assert.equal(info.headers.get("x-ct-speak-version"), "1.4.0");
+  assert.equal(info.headers.get("x-ct-speak-version"), "1.5.0");
   const version = await info.json();
-  assert.equal(version.version, "1.4.0");
-  assert.equal(version.lessons, 39);
-  assert.equal(version.scenarios, 34);
-  assert.equal(version.phrases, 483);
-  assert.equal(version.migration, "007_ten_sentences_per_lesson.sql");
+  assert.equal(version.version, "1.5.0");
+  assert.equal(version.lessons, 55);
+  assert.equal(version.scenarios, 50);
+  assert.equal(version.phrases, 691);
+  assert.equal(version.migration, "008_professional_fields.sql");
   for (const path of ["/", "/index.html", "/app-version.json"]) {
     const response = await fetch(origin + path);
     assert.equal(response.status, 200);
     assert.ok(response.headers.get("cache-control").includes("no-store"));
     if (path === "/app-version.json")
-      assert.equal((await response.json()).version, "1.4.0");
+      assert.equal((await response.json()).version, "1.5.0");
   }
 });
 
@@ -829,7 +829,7 @@ test("home and lesson library show illustrations and the visible release label",
   try {
     const document = dom.window.document;
     assert.ok(
-      document.querySelector(".sidebar-bottom").textContent.includes("1.4.0"),
+      document.querySelector(".sidebar-bottom").textContent.includes("1.5.0"),
     );
     const heroImage = document.querySelector(".hero-visual img");
     assert.ok(heroImage && heroImage.getAttribute("alt"));
@@ -842,21 +842,21 @@ test("home and lesson library show illustrations and the visible release label",
     );
     click(dom, "Bài học");
     await waitFor(() => document.querySelector(".lesson-grid"));
-    assert.equal(document.querySelectorAll(".lesson-card").length, 39);
+    assert.equal(document.querySelectorAll(".lesson-card").length, 55);
     assert.equal(
       document.querySelectorAll('.lesson-card-art [role="img"]').length,
-      39,
+      55,
     );
   } finally {
     dom.window.close();
   }
 });
 
-test("all 39 lessons have ten sentences while vocabulary and existing review indexes stay separate", async () => {
+test("all 55 lessons have ten sentences while vocabulary and existing review indexes stay separate", async () => {
   const { body: catalog } = await request("/api/catalog");
-  assert.equal(catalog.lessons.length, 39);
-  assert.equal(catalog.lessons.flatMap((l) => l.phrases).length, 390);
-  assert.equal(catalog.lessons.flatMap((l) => l.flashcards).length, 483);
+  assert.equal(catalog.lessons.length, 55);
+  assert.equal(catalog.lessons.flatMap((l) => l.phrases).length, 550);
+  assert.equal(catalog.lessons.flatMap((l) => l.flashcards).length, 691);
   for (const lesson of catalog.lessons) {
     assert.equal(lesson.phrases.length, 10);
     assert.equal(
@@ -1069,5 +1069,78 @@ test("YouTube reader submits URL, shows timed transcript, copies text and report
   } finally {
     dom.window.close();
     await new Promise((resolve) => youtubeServer.close(resolve));
+  }
+});
+
+test("eight new professional fields each have two complete lessons and two dialogues", async () => {
+  const { body: catalog } = await request("/api/catalog");
+  assert.equal(catalog.fields.length, 10);
+  for (let fieldId = 3; fieldId <= 10; fieldId++) {
+    const field = catalog.fields.find((f) => f.id === fieldId);
+    assert.ok(field.title);
+    const lessons = catalog.lessons.filter((l) => l.fieldId === fieldId);
+    const dialogues = catalog.scenarios.filter((s) => s.fieldId === fieldId);
+    assert.equal(lessons.length, 2);
+    assert.equal(dialogues.length, 2);
+    for (const lesson of lessons) {
+      assert.equal(lesson.cat, "work");
+      assert.equal(lesson.phrases.length, 10);
+      assert.equal(lesson.vocabulary.length, 3);
+      assert.equal(lesson.fieldTitle, field.title);
+    }
+    assert.ok(
+      dialogues.every(
+        (s) =>
+          s.cat === "work" &&
+          s.dialogue.length === 8 &&
+          s.fieldTitle === field.title,
+      ),
+    );
+  }
+});
+
+test("field filters select matching lessons and conversations", async () => {
+  const dom = await browser(cookie);
+  try {
+    const document = dom.window.document;
+    click(dom, "Bài học");
+    await waitFor(() =>
+      document.querySelector('[aria-label="Lĩnh vực bài học"]'),
+    );
+    const field = document.querySelector('[aria-label="Lĩnh vực bài học"]');
+    field.value = "3";
+    field.dispatchEvent(new dom.window.Event("change", { bubbles: true }));
+    await waitFor(() => document.querySelectorAll(".lesson-card").length === 2);
+    assert.ok(
+      document.querySelector(".lesson-grid").textContent.includes("đăng nhập"),
+    );
+    click(dom, "Hội thoại");
+    await waitFor(() =>
+      document.querySelector('[aria-label="Lĩnh vực hội thoại"]'),
+    );
+    const dialogueField = document.querySelector(
+      '[aria-label="Lĩnh vực hội thoại"]',
+    );
+    dialogueField.value = "4";
+    dialogueField.dispatchEvent(
+      new dom.window.Event("change", { bubbles: true }),
+    );
+    await waitFor(() =>
+      document
+        .querySelector(".scenario-context")
+        .textContent.includes("Người bệnh"),
+    );
+    assert.equal(
+      document.querySelectorAll(".scenario-picker button").length,
+      2,
+    );
+    assert.ok(
+      document
+        .querySelector(".scenario-picker")
+        .textContent.includes("Đặt lịch khám"),
+    );
+    assert.equal(document.querySelectorAll(".dialogue-line").length, 8);
+  } finally {
+    dom.window.close();
   }
 });

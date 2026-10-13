@@ -2,7 +2,7 @@
 
 Ứng dụng React/Vite với API Express và cơ sở dữ liệu PostgreSQL thật. Bài học, mẫu câu, kịch bản và lượt thoại được nạp từ SQL qua API; mục tiêu, tiến độ, lượt ôn và phiên luyện tập được ghi vào PostgreSQL thay cho localStorage.
 
-Hiện có **39 bài học, 483 mẫu câu/từ vựng, 34 hội thoại hai nhân vật và 45 tình huống luyện nghe từ vựng**.
+Hiện có **55 bài học, 691 mẫu câu/từ vựng, 50 hội thoại hai nhân vật và 45 tình huống luyện nghe từ vựng**.
 
 ## Cài đặt và chạy
 
@@ -128,17 +128,17 @@ Migration thêm dữ liệu và bảng `dialogue_lines`, không xóa bài học 
 
 ## Kiểm tra khi website vẫn hiện 8 bài hoặc giao diện cũ
 
-Bản 1.4.0 có nhãn **Phiên bản 1.4.0** ở chân thanh điều hướng, ảnh trên Tổng quan/thẻ Bài học và mục Luyện nghe từ vựng. HTML và API có header `Cache-Control: no-store`; asset JavaScript/CSS của Vite dùng tên theo nội dung. Ứng dụng không có service worker.
+Bản 1.5.0 có nhãn **Phiên bản 1.5.0** ở chân thanh điều hướng, ảnh trên Tổng quan/thẻ Bài học và mục Luyện nghe từ vựng. HTML và API có header `Cache-Control: no-store`; asset JavaScript/CSS của Vite dùng tên theo nội dung. Ứng dụng không có service worker.
 
 - `/app-version.json`: phiên bản frontend đã build.
 - `/api/version`: phiên bản backend, số bài/hội thoại/mẫu câu thực tế trong PostgreSQL và migration mới nhất; không trả về chuỗi kết nối hay biến môi trường.
 - Mọi phản hồi backend có header `X-CT-Speak-Version`.
 
-Với bản này, frontend/backend đều là `1.4.0`; CSDL phải có 39 bài, 34 hội thoại, 483 mẫu câu/từ vựng và migration `006_illustrated_conversations.sql`. Nếu website còn thiếu mục Luyện nghe từ vựng và hiện 8/8, giao diện được hiển thị là bản cũ. Nhật ký build đúng commit và HTTP 200 chưa chứng minh tên miền đang phục vụ đúng container.
+Với bản này, frontend/backend đều là `1.5.0`; CSDL phải có 55 bài, 50 hội thoại, 691 mẫu câu/từ vựng và migration `008_professional_fields.sql`. Nếu website còn thiếu mục Luyện nghe từ vựng và hiện 8/8, giao diện được hiển thị là bản cũ. Nhật ký build đúng commit và HTTP 200 chưa chứng minh tên miền đang phục vụ đúng container.
 
 Sau khi triển khai, mở `/api/version` và `/app-version.json` để đối chiếu. Nếu vẫn trả về bản cũ hoặc không tồn tại mặc dù image mới đã LIVE, cần kiểm tra container thực tế mà Traefik đang định tuyến hoặc cache của nền tảng. Không xóa CSDL để xử lý lỗi frontend cũ.
 
-Banner trang Tổng quan dùng hình minh họa giao tiếp mới, màu sắc sống động và bố cục hiển thị ảnh trên cả máy tính/điện thoại. Tệp `public/illustrations/hero-conversation-vivid.png` được đóng gói cùng frontend; phiên bản giao diện hiện tại là 1.4.0.
+Banner trang Tổng quan dùng hình minh họa giao tiếp mới, màu sắc sống động và bố cục hiển thị ảnh trên cả máy tính/điện thoại. Tệp `public/illustrations/hero-conversation-vivid.png` được đóng gói cùng frontend; phiên bản giao diện hiện tại là 1.5.0.
 
 ## Mỗi bài có 10 câu giao tiếp
 
@@ -146,7 +146,7 @@ Migration `007_ten_sentences_per_lesson.sql` bổ sung 279 câu theo từng tìn
 
 Flashcards có đủ 390 câu và 93 từ vựng, tổng 483 thẻ. API trả `phrases` cho 10 câu thực hành, `vocabulary` cho từ vựng và `flashcards` kèm `phraseIndex` ổn định. Các câu mới được thêm sau mã câu/từ cũ; không thay đổi ID, thứ tự thẻ cũ trong từng bài, tiến độ hoàn thành hay lịch ôn đã lưu. Bài đã hoàn thành không tự bị đánh dấu chưa hoàn thành; người học có thể mở lại để luyện các câu mới.
 
-Phiên bản hiện tại: **1.4.0**. Triển khai lại từ `main`; `npm start` tự chạy migration mới. Không cần xóa hoặc seed lại CSDL.
+Phiên bản hiện tại: **1.5.0**. Triển khai lại từ `main`; `npm start` tự chạy migration mới. Không cần xóa hoặc seed lại CSDL.
 
 ## Trò chơi sau mỗi bài học
 
@@ -159,7 +159,7 @@ Nhập đáp án và nhấn **Kiểm tra đáp án** (hoặc Enter), xem phản 
 
 Kết thúc lượt chơi có điểm trên 5, nút **Chơi lại** với bộ câu được xáo lại và **Về thư viện**. Trò chơi có cho cả 39 bài. Bài học vẫn được lưu hoàn thành nếu người học rời trò chơi; điểm trò chơi chỉ hiển thị trong lượt chơi hiện tại, chưa lưu lịch sử điểm trên máy chủ. Không cần migration mới hoặc khóa API.
 
-Giao diện 1.4.0 dùng nền lavender–mint có họa tiết chấm, màu nhấn tím/hồng, thẻ viền nhẹ và bóng màu. Theme được đóng gói trong `theme.css`; giao diện có focus bàn phím và tôn trọng tùy chọn giảm chuyển động.
+Giao diện 1.5.0 dùng nền lavender–mint có họa tiết chấm, màu nhấn tím/hồng, thẻ viền nhẹ và bóng màu. Theme được đóng gói trong `theme.css`; giao diện có focus bàn phím và tôn trọng tùy chọn giảm chuyển động.
 
 ## YouTube → Văn bản (phụ đề miễn phí)
 
@@ -171,4 +171,23 @@ Giới hạn thực tế: video riêng tư/hạn chế, video không có phụ �
 
 Máy chủ Vibehost cần kết nối HTTPS tới `www.youtube.com`; trình duyệt cần truy cập `www.youtube-nocookie.com` để xem video nhúng. Không cần biến môi trường mới. Văn bản hiển thị trong phiên trang, có thể tải TXT; chưa lưu thư viện transcript vào CSDL.
 
-Kiểm thử dùng phản hồi YouTube giả lập để kiểm tra parsing, ngôn ngữ, mốc thời gian, lỗi, API và giao diện. Lần kiểm tra YouTube trực tiếp từ môi trường Codex gặp lỗi kết nối mạng, nên chưa xác minh khả năng lấy phụ đề thật từ IP của Vibehost. Phiên bản ứng dụng: **1.4.0**.
+Kiểm thử dùng phản hồi YouTube giả lập để kiểm tra parsing, ngôn ngữ, mốc thời gian, lỗi, API và giao diện. Lần kiểm tra YouTube trực tiếp từ môi trường Codex gặp lỗi kết nối mạng, nên chưa xác minh khả năng lấy phụ đề thật từ IP của Vibehost. Phiên bản ứng dụng: **1.5.0**.
+
+## Tiếng Anh theo lĩnh vực nghề nghiệp
+
+Migration `008_professional_fields.sql` bổ sung **8 lĩnh vực, 16 bài học và 16 hội thoại**. Mỗi lĩnh vực có 2 bài, mỗi bài 10 câu giao tiếp, 3 từ vựng và một hội thoại hai nhân vật gồm 8 lượt nói, có nghĩa tiếng Việt và IPA cho phần bài học.
+
+| Lĩnh vực                 | Tình huống mẫu                                            |
+| ------------------------ | --------------------------------------------------------- |
+| Công nghệ & IT           | Báo lỗi đăng nhập; trao đổi yêu cầu dự án phần mềm        |
+| Y tế & chăm sóc sức khỏe | Đặt lịch khám; hỏi cách đọc hướng dẫn trên đơn thuốc      |
+| Giáo dục & học tập       | Đăng ký khóa học; hỏi giảng viên về bài tập/dự án nhóm    |
+| Tuyển dụng & nhân sự     | Phỏng vấn xin việc; hỏi hợp đồng, giờ làm và quyền lợi    |
+| Ngân hàng & tài chính    | Mở tài khoản; báo giao dịch chưa rõ và kiểm tra thẻ       |
+| Logistics & vận chuyển   | Đặt lịch lấy hàng; hỏi đơn giao chậm và thông quan        |
+| Khách sạn & sự kiện      | Nhờ lễ tân đặt dịch vụ; đặt phòng họp và chuẩn bị sự kiện |
+| Marketing & truyền thông | Lập kế hoạch chiến dịch; báo cáo kết quả và nhận phản hồi |
+
+Chọn **Lĩnh vực** trên trang Bài học hoặc Hội thoại. Bộ lọc Công việc bao gồm các lĩnh vực nghề nghiệp; Du lịch giữ các bài du lịch có sẵn. API `/api/catalog` trả `fields`, `fieldId` và `fieldTitle` để giao diện lọc trực tiếp dữ liệu từ PostgreSQL.
+
+Tổng nội dung hiện tại: **55 bài, 550 câu giao tiếp, 141 từ vựng, 50 hội thoại** (691 flashcards). Game cuối bài và phần nghe hội thoại tự dùng nội dung mới. Bối cảnh chuyên ngành phục vụ luyện ngôn ngữ, không thay thế tư vấn chuyên môn. Migration giữ nguyên nội dung và lịch sử học cũ, không cần biến môi trường mới. `npm start` tự cập nhật CSDL khi triển khai phiên bản **1.5.0**.
