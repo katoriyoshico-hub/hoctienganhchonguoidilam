@@ -392,9 +392,9 @@ function App({ fields, lessons, scenarios, listeningExercises, initialState }) {
     <div className="app">
       <aside className={"sidebar " + (mobile ? "show" : "")}>
         <div className="brand">
-          <div className="brandicon">CT</div>
+          <div className="brandicon">TA</div>
           <div>
-            <strong>CT-Speak</strong>
+            <strong>Tiếng Anh Hữu Ích</strong>
             <small>Speak with confidence</small>
           </div>
         </div>
@@ -411,9 +411,9 @@ function App({ fields, lessons, scenarios, listeningExercises, initialState }) {
           ))}
         </nav>
         <div className="sidebar-bottom">
-          <div className="avatar">CT</div>
+          <div className="avatar">TA</div>
           <div>
-            <b>Học viên CT-Speak</b>
+            <b>Học viên Tiếng Anh Hữu Ích</b>
             <small>Phiên bản {__APP_VERSION__}</small>
           </div>
         </div>
@@ -424,12 +424,12 @@ function App({ fields, lessons, scenarios, listeningExercises, initialState }) {
             {mobile ? <X /> : <Menu />}
           </button>
           <span className="breadcrumb">
-            CT-Speak <span>/</span>{" "}
+            Tiếng Anh Hữu Ích <span>/</span>{" "}
             {nav.find((x) => x[0] === page)?.[2] || "Bài học"}
           </span>
           <span className="headright">
             <Flame size={18} color="#f69b41" /> Học mỗi ngày{" "}
-            <span className="avatar tiny">CT</span>
+            <span className="avatar tiny">TA</span>
           </span>
         </header>
         <div className="content">
