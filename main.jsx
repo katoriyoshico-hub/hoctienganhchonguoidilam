@@ -75,11 +75,168 @@ function Catalog() {
     <App
       lessons={data.lessons}
       scenarios={data.scenarios}
+      listeningExercises={data.listeningExercises || []}
       initialState={data.state}
     />
   );
 }
-function App({ lessons, scenarios, initialState }) {
+function ListeningPractice({ exercises, speak }) {
+  const [category, setCategory] = useState("all");
+  const [index, setIndex] = useState(0);
+  const [answer, setAnswer] = useState(null);
+  const [played, setPlayed] = useState(false);
+  const [correct, setCorrect] = useState(0);
+  const [completed, setCompleted] = useState(0);
+  const [finished, setFinished] = useState(false);
+  useEffect(() => () => window.speechSynthesis?.cancel(), []);
+  const filtered = exercises.filter(
+    (e) => category === "all" || e.cat === category,
+  );
+  const exercise = filtered[index];
+  const reset = (cat = category) => {
+    window.speechSynthesis?.cancel();
+    setCategory(cat);
+    setIndex(0);
+    setAnswer(null);
+    setPlayed(false);
+    setCorrect(0);
+    setCompleted(0);
+    setFinished(false);
+  };
+  if (!exercise)
+    return <p role="status">Chưa có bài luyện nghe trong chủ đề này.</p>;
+  const distractors = [...new Set(exercises.map((e) => e.meaning))]
+    .filter((m) => m !== exercise.meaning)
+    .slice(0, 3);
+  const choices = [exercise.meaning, ...distractors];
+  // Stable shuffle avoids reshuffling answers during playback or feedback.
+  let seed = exercise.id * 7919;
+  for (let i = choices.length - 1; i > 0; i--) {
+    seed = (seed * 1664525 + 1013904223) >>> 0;
+    const j = seed % (i + 1);
+    [choices[i], choices[j]] = [choices[j], choices[i]];
+  }
+  const play = (rate) => {
+    const text = exercise.spokenText + " Key word: " + exercise.word + ".";
+    speak(text, rate);
+    if ("speechSynthesis" in window) setPlayed(true);
+  };
+  const choose = (meaning) => {
+    if (!played || answer !== null) return;
+    setAnswer(meaning);
+    setCompleted((n) => n + 1);
+    if (meaning === exercise.meaning) setCorrect((n) => n + 1);
+  };
+  return (
+    <section className="listening-practice">
+      <div className="page-title">
+        <span className="eyebrow dark">NGHE TRONG TÌNH HUỐNG</span>
+        <h1>Luyện nghe từ vựng</h1>
+        <p>Nghe câu và từ khóa, chọn nghĩa tiếng Việt rồi xem giải thích.</p>
+      </div>
+      <div className="filters">
+        {[
+          ["all", "Tất cả"],
+          ["work", "Bán hàng"],
+          ["travel", "Tham quan & quà lưu niệm"],
+        ].map(([cat, label]) => (
+          <button
+            key={cat}
+            className={category === cat ? "active" : ""}
+            onClick={() => reset(cat)}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      {finished ? (
+        <div className="lesson-detail" role="status">
+          <h2>Hoàn thành lượt luyện nghe</h2>
+          <p>
+            Bạn trả lời đúng {correct}/{completed} câu.
+          </p>
+          <button className="primary" onClick={() => reset()}>
+            Luyện lại chủ đề
+          </button>
+        </div>
+      ) : (
+        <div className="lesson-detail">
+          <p>
+            Câu {index + 1}/{filtered.length} · Đúng {correct}/{completed}
+          </p>
+          <h2>{exercise.lessonTitle}</h2>
+          <p className="listening-situation">{exercise.situation}</p>
+          <div className="practice-actions">
+            <button className="primary" onClick={() => play(0.82)}>
+              <Volume2 size={18} /> Nghe tình huống
+            </button>
+            <button className="outline" onClick={() => play(0.65)}>
+              Nghe chậm
+            </button>
+          </div>
+          <h3>Từ khóa bạn vừa nghe có nghĩa là gì?</h3>
+          {!played && (
+            <p>Nhấn nghe để bắt đầu. Bạn có thể nghe lại nhiều lần.</p>
+          )}
+          <div className="listening-choices">
+            {choices.map((meaning) => (
+              <button
+                key={meaning}
+                className={
+                  "outline " +
+                  (answer !== null && meaning === exercise.meaning
+                    ? "answer-correct"
+                    : answer === meaning
+                      ? "answer-wrong"
+                      : "")
+                }
+                disabled={!played || answer !== null}
+                onClick={() => choose(meaning)}
+              >
+                {meaning}
+              </button>
+            ))}
+          </div>
+          {answer !== null && (
+            <div className="listening-feedback" role="status">
+              <strong>
+                {answer === exercise.meaning
+                  ? "Chính xác!"
+                  : "Chưa đúng. Hãy nghe lại và chú ý từ khóa."}
+              </strong>
+              <p>
+                <b>{exercise.word}</b> {exercise.ipa} — {exercise.meaning}
+              </p>
+              <p className="listening-transcript">{exercise.spokenText}</p>
+              <button
+                className="primary"
+                onClick={() => {
+                  window.speechSynthesis?.cancel();
+                  if (index + 1 === filtered.length) setFinished(true);
+                  else {
+                    setIndex((i) => i + 1);
+                    setAnswer(null);
+                    setPlayed(false);
+                  }
+                }}
+              >
+                {index + 1 === filtered.length
+                  ? "Xem kết quả"
+                  : "Tình huống tiếp theo"}
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+      <p className="note">
+        Giọng đọc tổng hợp phụ thuộc trình duyệt và giọng tiếng Anh đã cài. Kết
+        quả lượt nghe chỉ hiển thị trong phiên hiện tại.
+      </p>
+    </section>
+  );
+}
+
+function App({ lessons, scenarios, listeningExercises, initialState }) {
   const [page, setPage] = useState("home"),
     [category, setCategory] = useState("all"),
     [done, setDone] = useState(initialState.done),
@@ -114,7 +271,7 @@ function App({ lessons, scenarios, initialState }) {
   const all = lessons.flatMap((l) =>
     l.phrases.map((p, i) => ({ key: `${l.id}-${i}`, p, lesson: l })),
   );
-  const speak = (t) => {
+  const speak = (t, rate = 0.82) => {
     if (!("speechSynthesis" in window)) {
       alert("Trình duyệt không hỗ trợ phát âm.");
       return;
@@ -122,7 +279,7 @@ function App({ lessons, scenarios, initialState }) {
     speechSynthesis.cancel();
     let u = new SpeechSynthesisUtterance(t);
     u.lang = "en-US";
-    u.rate = 0.82;
+    u.rate = rate;
     speechSynthesis.speak(u);
   };
   const record = () => {
@@ -210,6 +367,7 @@ function App({ lessons, scenarios, initialState }) {
     ["home", House, "Tổng quan"],
     ["lessons", BookOpen, "Bài học"],
     ["roleplay", MessageCircle, "Hội thoại"],
+    ["listening", Volume2, "Luyện nghe từ vựng"],
     ["flashcards", Layers, "Flashcards"],
     ["progress", ChartNoAxesColumn, "Tiến độ"],
   ];
@@ -537,6 +695,9 @@ function App({ lessons, scenarios, initialState }) {
                   </div>
                 </div>
               </>
+            )}
+            {page === "listening" && (
+              <ListeningPractice exercises={listeningExercises} speak={speak} />
             )}
             {page === "roleplay" && (
               <>

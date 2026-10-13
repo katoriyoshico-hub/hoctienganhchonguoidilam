@@ -30,7 +30,15 @@ export function createApp(pool) {
           (SELECT COALESCE(json_agg(t.bot_reaction_rules ORDER BY t.step_order), '[]'::json) FROM scenario_turns t WHERE t.scenario_id = s.scenario_id) AS lines,
           (SELECT COALESCE(json_agg(t.suggested_sample_phrases[1] ORDER BY t.step_order), '[]'::json) FROM scenario_turns t WHERE t.scenario_id = s.scenario_id) AS hints
         FROM scenarios s JOIN lessons l USING(lesson_id) JOIN modules m USING(module_id) WHERE m.is_active
-      ) s) AS scenarios`);
+      ) s) AS scenarios,
+      (SELECT COALESCE(json_agg(e ORDER BY e.id), '[]'::json) FROM (
+        SELECT e.exercise_id AS id, l.lesson_id AS "lessonId", l.title AS "lessonTitle",
+          CASE m.category WHEN 'WORKPLACE_CONSULTING' THEN 'work' ELSE 'travel' END AS cat,
+          e.situation, e.spoken_text AS "spokenText", p.english_text AS word,
+          p.vietnamese_meaning AS meaning, p.ipa_phonetic AS ipa
+        FROM listening_exercises e JOIN phrases p USING(phrase_id)
+        JOIN lessons l USING(lesson_id) JOIN modules m USING(module_id) WHERE m.is_active
+      ) e) AS "listeningExercises"`);
     res.set("Cache-Control", "no-store").json(catalog);
   });
   app.use("/api", (_req, res) => res.status(404).json({ error: "Not found" }));

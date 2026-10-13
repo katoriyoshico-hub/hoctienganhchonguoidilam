@@ -482,3 +482,131 @@ test("upgrading an existing database preserves previous lessons and learner prog
     await admin.query(`DROP DATABASE ${upgradeName}`);
   }
 });
+
+test("listening API returns 45 contextual exercises linked to vocabulary", async () => {
+  const { body: catalog } = await request("/api/catalog");
+  assert.equal(catalog.listeningExercises.length, 45);
+  assert.equal(
+    catalog.listeningExercises.filter((e) => e.cat === "work").length,
+    15,
+  );
+  assert.equal(
+    catalog.listeningExercises.filter((e) => e.cat === "travel").length,
+    30,
+  );
+  for (const exercise of catalog.listeningExercises) {
+    assert.ok(exercise.situation.startsWith("Giả sử"));
+    assert.ok(
+      exercise.spokenText.toLowerCase().includes(exercise.word.toLowerCase()),
+    );
+    assert.ok(
+      catalog.lessons
+        .find((l) => l.id === exercise.lessonId)
+        .vocabulary.some(
+          (v) => v[0] === exercise.word && v[1] === exercise.meaning,
+        ),
+    );
+  }
+});
+
+test("listening quiz speaks the context, hides transcript, checks answers and resets by topic", async () => {
+  const { body: catalog } = await request("/api/catalog");
+  const dom = await browser(cookie);
+  const spoken = [];
+  dom.window.SpeechSynthesisUtterance = class {
+    constructor(text) {
+      this.text = text;
+    }
+  };
+  dom.window.speechSynthesis = {
+    cancel() {},
+    speak(utterance) {
+      spoken.push(utterance);
+    },
+  };
+  try {
+    const document = dom.window.document;
+    click(dom, "Luyện nghe từ vựng");
+    await waitFor(() => document.querySelector(".listening-practice"));
+    assert.equal(document.querySelector(".listening-transcript"), null);
+    assert.ok(
+      [...document.querySelectorAll(".listening-choices button")].every(
+        (b) => b.disabled,
+      ),
+    );
+    click(dom, "Nghe chậm");
+    await waitFor(() =>
+      [...document.querySelectorAll(".listening-choices button")].every(
+        (b) => !b.disabled,
+      ),
+    );
+    assert.equal(spoken[0].rate, 0.65);
+    assert.ok(
+      spoken[0].text.includes(catalog.listeningExercises[0].spokenText),
+    );
+    assert.ok(spoken[0].text.includes("Key word: customer"));
+    const wrong = [
+      ...document.querySelectorAll(".listening-choices button"),
+    ].find((b) => b.textContent !== catalog.listeningExercises[0].meaning);
+    wrong.click();
+    await waitFor(() => document.querySelector(".listening-feedback"));
+    assert.ok(
+      document
+        .querySelector(".listening-feedback")
+        .textContent.includes("Chưa đúng"),
+    );
+    assert.equal(
+      document.querySelector(".listening-transcript").textContent,
+      catalog.listeningExercises[0].spokenText,
+    );
+    assert.ok(
+      document
+        .querySelector(".answer-correct")
+        .textContent.includes("khách hàng"),
+    );
+    click(dom, "Tình huống tiếp theo");
+    await waitFor(() => !document.querySelector(".listening-feedback"));
+    assert.ok(document.body.textContent.includes("Câu 2/45"));
+    assert.ok(
+      [...document.querySelectorAll(".listening-choices button")].every(
+        (b) => b.disabled,
+      ),
+    );
+    click(dom, "Tham quan & quà lưu niệm");
+    await waitFor(() => document.body.textContent.includes("Câu 1/30"));
+    assert.ok(document.body.textContent.includes("tháp Eiffel"));
+    click(dom, "Bán hàng");
+    await waitFor(() => document.body.textContent.includes("Câu 1/15"));
+    const exercises = catalog.listeningExercises.filter(
+      (e) => e.cat === "work",
+    );
+    for (let i = 0; i < exercises.length; i++) {
+      click(dom, "Nghe tình huống");
+      await waitFor(
+        () => !document.querySelector(".listening-choices button").disabled,
+      );
+      const correct = [
+        ...document.querySelectorAll(".listening-choices button"),
+      ].find((b) => b.textContent === exercises[i].meaning);
+      assert.ok(correct);
+      correct.click();
+      await waitFor(() => document.querySelector(".listening-feedback"));
+      assert.ok(
+        document
+          .querySelector(".listening-feedback")
+          .textContent.includes("Chính xác"),
+      );
+      click(
+        dom,
+        i === exercises.length - 1 ? "Xem kết quả" : "Tình huống tiếp theo",
+      );
+      await waitFor(() => !document.querySelector(".listening-feedback"));
+    }
+    assert.ok(document.body.textContent.includes("15/15"));
+    click(dom, "Luyện lại chủ đề");
+    await waitFor(() => document.querySelector(".listening-choices"));
+    assert.ok(document.body.textContent.includes("Đúng 0/0"));
+  } finally {
+    dom.window.close();
+  }
+});

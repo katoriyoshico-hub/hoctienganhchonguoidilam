@@ -97,3 +97,14 @@ Migration `004_sales_sightseeing_souvenirs.sql` thêm 15 bài, 45 câu giao ti�
 Mỗi bài mới có nghĩa tiếng Việt, IPA, mục từ vựng với nút nghe và nội dung ôn trong Flashcards. Hội thoại hiển thị vai của người học cùng bối cảnh. Các câu hỏi ở địa điểm nổi tiếng dùng để luyện giao tiếp, không cung cấp giá vé/lịch mở cửa hoặc quy định du lịch hiện hành.
 
 Triển khai lại từ `main`; `npm start` tự áp dụng migration mới. Không xóa CSDL, không sửa migration cũ; bài học cũ và tiến độ đã lưu được giữ nguyên.
+
+## Luyện nghe từ vựng trong tình huống giả định
+
+Mở **Luyện nghe từ vựng** trên thanh điều hướng. Migration `005_contextual_listening.sql` thêm 45 bài nghe ngắn, liên kết với từ vựng có sẵn: 15 tình huống bán hàng và 30 tình huống tham quan/mua quà lưu niệm.
+
+1. Đọc bối cảnh giả định bằng tiếng Việt; chọn chủ đề nếu muốn.
+2. Nhấn **Nghe tình huống** hoặc **Nghe chậm**. Trình duyệt đọc câu tiếng Anh rồi nhắc từ khóa; có thể nghe lại nhiều lần.
+3. Chọn một trong bốn nghĩa tiếng Việt. Câu tiếng Anh, từ khóa và IPA chỉ hiện sau khi trả lời.
+4. Xem đáp án, chuyển tình huống và nhận kết quả cuối lượt. Có thể luyện lại chủ đề.
+
+Nội dung bài nghe được lưu trong PostgreSQL và trả về ở `listeningExercises` trong `/api/catalog`; không dùng nội dung giả lập trong frontend. Giọng đọc dùng SpeechSynthesis của trình duyệt, chưa phải bản thu của người bản địa. Điểm lượt nghe nằm trong phiên giao diện hiện tại, chưa lưu lịch sử điểm vào tài khoản. Khi triển khai lại, `npm start` tự chạy migration mới.
