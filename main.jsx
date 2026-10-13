@@ -585,8 +585,8 @@ function App({ fields, lessons, scenarios, listeningExercises, initialState }) {
                 <div className="conversation-previews">
                   {[
                     scenarios[0],
-                    scenarios.find((s) => s.illustrationKey === "city"),
-                    scenarios.find((s) => s.illustrationKey === "souvenir"),
+                    scenarios.find((s) => s.lessonId === 205),
+                    scenarios.find((s) => s.lessonId === 210),
                   ]
                     .filter(Boolean)
                     .map((s) => (
@@ -669,18 +669,7 @@ function App({ fields, lessons, scenarios, listeningExercises, initialState }) {
                         onClick={() => openLesson(l)}
                       >
                         <div className="lesson-card-art">
-                          <SceneIllustration
-                            scenario={
-                              scenarios.find(
-                                (s) =>
-                                  s.dialogue?.length && s.lessonId === l.id,
-                              ) || {
-                                illustrationKey:
-                                  l.cat === "work" ? "retail" : "city",
-                                title: l.title,
-                              }
-                            }
-                          />
+                          <SceneIllustration scenario={l} />
                         </div>
                         <div className={"lesson-icon " + l.cat}>
                           {l.cat === "work" ? <Briefcase /> : <Plane />}
@@ -720,6 +709,7 @@ function App({ fields, lessons, scenarios, listeningExercises, initialState }) {
                   <p>{active.desc}</p>
                 </div>
                 <div className="lesson-detail">
+                  <div className="lesson-detail-art"><SceneIllustration scenario={active} /></div>
                   <div className="progressbar">
                     <div
                       style={{

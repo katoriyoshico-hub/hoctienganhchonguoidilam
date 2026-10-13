@@ -53,7 +53,7 @@ test("deployment starts on an empty database and restarts without reseeding", as
       `http://127.0.0.1:${restarted.address().port}/api/catalog`,
     );
     assert.equal(response.status, 200);
-    assert.equal((await response.json()).lessons.length, 55);
+    assert.equal((await response.json()).lessons.length, 87);
   } finally {
     await new Promise((resolve) => restarted.close(resolve));
   }
@@ -99,9 +99,9 @@ test("all ten PRD tables exist; migrations repeat without duplicating content", 
   ])
     assert.ok(rows.some((r) => r.table_name === table));
   const result = await request("/api/catalog");
-  assert.equal(result.body.lessons.length, 55);
-  assert.equal(result.body.scenarios.length, 50);
-  assert.equal(result.body.lessons.flatMap((l) => l.phrases).length, 550);
+  assert.equal(result.body.lessons.length, 87);
+  assert.equal(result.body.scenarios.length, 82);
+  assert.equal(result.body.lessons.flatMap((l) => l.phrases).length, 870);
   assert.ok(
     result.body.scenarios.every(
       (s) => s.lines.length === 4 && s.hints.length === 4,
@@ -260,7 +260,7 @@ test("built frontend loads API content and saves learning changes without localS
   const dom = await browser(cookie);
   try {
     const document = dom.window.document;
-    assert.ok(document.body.textContent.includes("691"));
+    assert.ok(document.body.textContent.includes("1107"));
     click(dom, "Bài học");
     await waitFor(() => document.querySelector(".lesson-grid"));
     assert.ok(document.body.textContent.includes("Database-backed lesson"));
@@ -391,7 +391,7 @@ test("database errors produce a failure response instead of false success", asyn
 
 test("new content covers sales, landmarks and souvenirs with vocabulary and review persistence", async () => {
   const { body: catalog } = await request("/api/catalog");
-  assert.equal(catalog.lessons.flatMap((l) => l.vocabulary).length, 141);
+  assert.equal(catalog.lessons.flatMap((l) => l.vocabulary).length, 237);
   for (const id of [
     105, 106, 107, 108, 109, 205, 206, 207, 208, 209, 210, 211, 212, 213, 214,
   ]) {
@@ -469,12 +469,12 @@ test("upgrading an existing database preserves previous lessons and learner prog
     assert.equal(
       (await existing.query("SELECT COUNT(*)::int AS n FROM lessons")).rows[0]
         .n,
-      55,
+      87,
     );
     assert.equal(
       (await existing.query("SELECT COUNT(*)::int AS n FROM phrases")).rows[0]
         .n,
-      691,
+      1107,
     );
     assert.equal(
       (await existing.query("SELECT title FROM lessons WHERE lesson_id=101"))
@@ -626,31 +626,11 @@ test("listening quiz speaks the context, hides transcript, checks answers and re
   }
 });
 
-test("all 50 illustrated conversations contain two named characters and eight translated lines", async () => {
+test("all 82 illustrated conversations contain two named characters and eight translated lines", async () => {
   const { body: catalog } = await request("/api/catalog");
-  assert.equal(catalog.scenarios.length, 50);
-  const keys = new Set([
-    "office",
-    "phone",
-    "airport",
-    "online",
-    "fitting",
-    "packing",
-    "retail",
-    "city",
-    "museum",
-    "souvenir",
-    "hotel",
-    "restaurant",
-    "wall",
-    "falls",
-    "park",
-    "barcelona",
-    "temple",
-    "rome",
-  ]);
+  assert.equal(catalog.scenarios.length, 82);
   for (const scenario of catalog.scenarios) {
-    assert.ok(keys.has(scenario.illustrationKey));
+    assert.match(scenario.illustrationKey, /^(field-(?:[3-9]|10)|legacy-[0-6])-[0-5]$/);
     assert.ok(scenario.illustrationAlt);
     assert.ok(
       scenario.partnerName &&
@@ -670,6 +650,8 @@ test("all 50 illustrated conversations contain two named characters and eight tr
     "conversation-scenes.png",
     "landmark-scenes.png",
     "additional-scenes.png",
+    ...Array.from({length:8}, (_,i)=>`lesson-field-${i+3}.png`),
+    ...Array.from({length:7}, (_,i)=>`lesson-legacy-${i}.png`),
   ]) {
     const response = await fetch(origin + "/illustrations/" + file);
     assert.equal(response.status, 200);
@@ -715,7 +697,7 @@ test("two-character playback follows dialogue order, supports individual lines, 
     assert.ok(
       document
         .querySelector(".conversation-illustration")
-        .style.backgroundImage.includes("additional-scenes.png"),
+        .style.backgroundImage.includes("lesson-legacy-0.png"),
     );
     assert.equal(document.querySelectorAll(".dialogue-translation").length, 8);
     click(dom, "Nghe toàn bộ hội thoại");
@@ -765,7 +747,7 @@ test("two-character playback follows dialogue order, supports individual lines, 
     await waitFor(() =>
       document
         .querySelector(".conversation-illustration")
-        .style.backgroundImage.includes("landmark-scenes.png"),
+        .style.backgroundImage.includes("lesson-legacy-5.png"),
     );
     assert.ok(
       document
@@ -808,19 +790,19 @@ test("release diagnostics report real database counts and avoid caching the HTML
   const info = await fetch(origin + "/api/version");
   assert.equal(info.status, 200);
   assert.equal(info.headers.get("cache-control"), "no-store");
-  assert.equal(info.headers.get("x-ct-speak-version"), "1.5.1");
+  assert.equal(info.headers.get("x-ct-speak-version"), "1.6.0");
   const version = await info.json();
-  assert.equal(version.version, "1.5.1");
-  assert.equal(version.lessons, 55);
-  assert.equal(version.scenarios, 50);
-  assert.equal(version.phrases, 691);
-  assert.equal(version.migration, "008_professional_fields.sql");
+  assert.equal(version.version, "1.6.0");
+  assert.equal(version.lessons, 87);
+  assert.equal(version.scenarios, 82);
+  assert.equal(version.phrases, 1107);
+  assert.equal(version.migration, "009_six_lessons_and_scenario_art.sql");
   for (const path of ["/", "/index.html", "/app-version.json"]) {
     const response = await fetch(origin + path);
     assert.equal(response.status, 200);
     assert.ok(response.headers.get("cache-control").includes("no-store"));
     if (path === "/app-version.json")
-      assert.equal((await response.json()).version, "1.5.1");
+      assert.equal((await response.json()).version, "1.6.0");
   }
 });
 
@@ -829,7 +811,7 @@ test("home and lesson library show illustrations and the visible release label",
   try {
     const document = dom.window.document;
     assert.ok(
-      document.querySelector(".sidebar-bottom").textContent.includes("1.5.1"),
+      document.querySelector(".sidebar-bottom").textContent.includes("1.6.0"),
     );
     const heroImage = document.querySelector(".hero-visual img");
     assert.ok(heroImage && heroImage.getAttribute("alt"));
@@ -842,21 +824,26 @@ test("home and lesson library show illustrations and the visible release label",
     );
     click(dom, "Bài học");
     await waitFor(() => document.querySelector(".lesson-grid"));
-    assert.equal(document.querySelectorAll(".lesson-card").length, 55);
+    assert.equal(document.querySelectorAll(".lesson-card").length, 87);
     assert.equal(
       document.querySelectorAll('.lesson-card-art [role="img"]').length,
-      55,
+      87,
     );
+    const card=document.querySelector('.lesson-card');
+    const scene=card.querySelector('[role="img"]').style.backgroundImage;
+    card.click();
+    await waitFor(()=>document.querySelector('.lesson-detail-art [role="img"]'));
+    assert.equal(document.querySelector('.lesson-detail-art [role="img"]').style.backgroundImage,scene);
   } finally {
     dom.window.close();
   }
 });
 
-test("all 55 lessons have ten sentences while vocabulary and existing review indexes stay separate", async () => {
+test("all 87 lessons have ten sentences while vocabulary and existing review indexes stay separate", async () => {
   const { body: catalog } = await request("/api/catalog");
-  assert.equal(catalog.lessons.length, 55);
-  assert.equal(catalog.lessons.flatMap((l) => l.phrases).length, 550);
-  assert.equal(catalog.lessons.flatMap((l) => l.flashcards).length, 691);
+  assert.equal(catalog.lessons.length, 87);
+  assert.equal(catalog.lessons.flatMap((l) => l.phrases).length, 870);
+  assert.equal(catalog.lessons.flatMap((l) => l.flashcards).length, 1107);
   for (const lesson of catalog.lessons) {
     assert.equal(lesson.phrases.length, 10);
     assert.equal(
@@ -1072,7 +1059,7 @@ test("YouTube reader submits URL, shows timed transcript, copies text and report
   }
 });
 
-test("eight new professional fields each have two complete lessons and two dialogues", async () => {
+test("eight new professional fields each have six complete lessons and six dialogues", async () => {
   const { body: catalog } = await request("/api/catalog");
   assert.equal(catalog.fields.length, 10);
   for (let fieldId = 3; fieldId <= 10; fieldId++) {
@@ -1080,8 +1067,8 @@ test("eight new professional fields each have two complete lessons and two dialo
     assert.ok(field.title);
     const lessons = catalog.lessons.filter((l) => l.fieldId === fieldId);
     const dialogues = catalog.scenarios.filter((s) => s.fieldId === fieldId);
-    assert.equal(lessons.length, 2);
-    assert.equal(dialogues.length, 2);
+    assert.equal(lessons.length, 6);
+    assert.equal(dialogues.length, 6);
     for (const lesson of lessons) {
       assert.equal(lesson.cat, "work");
       assert.equal(lesson.phrases.length, 10);
@@ -1110,7 +1097,7 @@ test("field filters select matching lessons and conversations", async () => {
     const field = document.querySelector('[aria-label="Lĩnh vực bài học"]');
     field.value = "3";
     field.dispatchEvent(new dom.window.Event("change", { bubbles: true }));
-    await waitFor(() => document.querySelectorAll(".lesson-card").length === 2);
+    await waitFor(() => document.querySelectorAll(".lesson-card").length === 6);
     assert.ok(
       document.querySelector(".lesson-grid").textContent.includes("đăng nhập"),
     );
@@ -1132,7 +1119,7 @@ test("field filters select matching lessons and conversations", async () => {
     );
     assert.equal(
       document.querySelectorAll(".scenario-picker button").length,
-      2,
+      6,
     );
     assert.ok(
       document
@@ -1144,3 +1131,14 @@ test("field filters select matching lessons and conversations", async () => {
     dom.window.close();
   }
 });
+
+ test("every lesson owns a distinct scene matching its dialogue", async () => {
+ const {body:catalog}=await request("/api/catalog");
+ assert.equal(new Set(catalog.lessons.map(l=>l.illustrationKey)).size,87);
+ for(const l of catalog.lessons){
+ assert.match(l.illustrationKey,/^(field-(?:[3-9]|10)|legacy-[0-6])-[0-5]$/);
+ assert.ok(l.illustrationAlt.endsWith(l.desc));
+ for(const s of catalog.scenarios.filter(s=>s.lessonId===l.id)) assert.equal(s.illustrationKey,l.illustrationKey);
+ }
+ for(let id=3;id<=10;id++) assert.equal(new Set(catalog.lessons.filter(l=>l.fieldId===id).map(l=>l.title)).size,6);
+ });

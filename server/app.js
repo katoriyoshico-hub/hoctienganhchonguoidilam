@@ -41,6 +41,7 @@ export function createApp(pool, options = {}) {
       (SELECT COALESCE(json_agg(json_build_object('id',module_id,'title',title,'category',category) ORDER BY order_index,module_id),'[]'::json) FROM modules WHERE is_active) AS fields,
       (SELECT COALESCE(json_agg(l ORDER BY l.id), '[]'::json) FROM (
         SELECT l.lesson_id AS id, CASE m.category WHEN 'TRAVEL_SURVIVAL' THEN 'travel' ELSE 'work' END AS cat,
+          l.illustration_key AS "illustrationKey", l.illustration_alt AS "illustrationAlt",
           l.title, l.target_situation AS "desc", m.module_id AS "fieldId", m.title AS "fieldTitle",
           (SELECT COALESCE(json_agg(json_build_array(p.english_text, p.vietnamese_meaning, p.ipa_phonetic) ORDER BY p.phrase_id), '[]'::json)
             FROM phrases p WHERE p.lesson_id = l.lesson_id AND p.context_note IS DISTINCT FROM 'VOCABULARY') AS phrases,

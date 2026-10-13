@@ -267,13 +267,16 @@ export default function Conversation({ scenario }) {
 }
 
 export function SceneIllustration({ scenario }) {
-  const key = scenario.illustrationKey || "retail",
-    position = panels[key] || panels.retail;
-  const sheet = extras.has(key)
-    ? "additional-scenes.png"
-    : landmarks.has(key)
-      ? "landmark-scenes.png"
-      : "conversation-scenes.png";
+  const key = scenario.illustrationKey || "retail";
+  const match = /^(field-(?:[3-9]|10)|legacy-[0-6])-([0-5])$/.exec(key);
+  const position = match
+    ? [(Number(match[2]) % 3) * 50, Math.floor(Number(match[2]) / 3) * 100]
+    : panels[key] || panels.retail;
+  const sheet = match
+    ? `lesson-${match[1]}.png`
+    : extras.has(key) ? "additional-scenes.png"
+    : landmarks.has(key) ? "landmark-scenes.png"
+    : "conversation-scenes.png";
   return (
     <div
       className="conversation-illustration"
