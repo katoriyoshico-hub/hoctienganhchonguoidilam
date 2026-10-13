@@ -90,3 +90,37 @@ button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-v
   .lesson-card, .conversation-preview { transition: none; }
   .lesson-card:hover, .conversation-preview:hover { transform: none; }
 }
+
+/* Vivid colour fields and original decorative artwork for the page background. */
+:root { --violet: #6833d2; --outline: #d9c7f3; }
+.app > main {
+  background-color: #f5efff;
+  background-image:
+    url('/illustrations/playful-backdrop.svg'),
+    radial-gradient(ellipse at 96% 0%, #f8acd975 0, transparent 48%),
+    radial-gradient(ellipse at 0% 72%, #72e6cd66 0, transparent 48%),
+    radial-gradient(ellipse at 60% 96%, #ffcd9966 0, transparent 44%),
+    linear-gradient(145deg, #f0e6ff 0%, #faf3ff 45%, #e9fff6 100%);
+  background-size: cover, auto, auto, auto, auto;
+  background-repeat: no-repeat;
+}
+.sidebar { background: linear-gradient(165deg, #fff 5%, #fff5fb 55%, #ebe4ff); }
+.brandicon { background: linear-gradient(135deg, #7236df, #d950a3); box-shadow: 4px 4px 0 #cfeddc; }
+.sidebar nav button.selected { background: #e8d9ff; border-color: #c6a5f4; color: #5523ac; box-shadow: 4px 4px 0 #9eebcc; }
+header { background: #fffffff2; border-bottom-color: #dac8f0; }
+.hero { background: linear-gradient(120deg, #452087, #863aca 65%, #cb578f); border-color: #6a39ae; box-shadow: 7px 9px 0 #d5c1f4; }
+.hero .primary { background: #ddffd9; color: #51238d; box-shadow: 4px 4px 0 #2a1548; }
+.stat { border-color: #d8c6f1; background: #fffdfefa; box-shadow: 4px 5px 0 #dcd0f280; }
+.stat:nth-child(1) { border-top: 4px solid #a879e6; background: linear-gradient(150deg,#fff 65%,#f2e9ff); }
+.stat:nth-child(2) { border-top: 4px solid #49bea3; background: linear-gradient(150deg,#fff 65%,#e7fff3); }
+.stat:nth-child(3) { border-top: 4px solid #ec84b1; background: linear-gradient(150deg,#fff 65%,#ffe9f3); }
+.stat strong { color: #49256f; }
+.filters button.active { box-shadow: 3px 4px 0 #8ee5c6; }
+.primary { background: linear-gradient(115deg,#6932c9,#873bcb); }
+.path.work { background: linear-gradient(130deg,#f4e8ff,#ffe9f1); border-color: #d5b4ed; }
+.path.travel { background: linear-gradient(130deg,#dffff1,#e4f6ff); border-color: #a8dfcf; }
+.quick { background: linear-gradient(110deg,#fff0f7,#fff6e8); border-color: #f0c3d6; }
+.lesson-card:hover, .conversation-preview:hover { border-color: #af84dd; box-shadow: 6px 9px 0 #ceb8ee; }
+@media(max-width:650px) {
+  .app > main { background-size: auto 850px, auto, auto, auto, auto; background-position: center top; }
+}
