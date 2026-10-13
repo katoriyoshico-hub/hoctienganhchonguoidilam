@@ -807,9 +807,9 @@ test("release diagnostics report real database counts and avoid caching the HTML
   const info = await fetch(origin + "/api/version");
   assert.equal(info.status, 200);
   assert.equal(info.headers.get("cache-control"), "no-store");
-  assert.equal(info.headers.get("x-ct-speak-version"), "1.3.0");
+  assert.equal(info.headers.get("x-ct-speak-version"), "1.3.1");
   const version = await info.json();
-  assert.equal(version.version, "1.3.0");
+  assert.equal(version.version, "1.3.1");
   assert.equal(version.lessons, 39);
   assert.equal(version.scenarios, 34);
   assert.equal(version.phrases, 483);
@@ -819,7 +819,7 @@ test("release diagnostics report real database counts and avoid caching the HTML
     assert.equal(response.status, 200);
     assert.ok(response.headers.get("cache-control").includes("no-store"));
     if (path === "/app-version.json")
-      assert.equal((await response.json()).version, "1.3.0");
+      assert.equal((await response.json()).version, "1.3.1");
   }
 });
 
@@ -828,7 +828,7 @@ test("home and lesson library show illustrations and the visible release label",
   try {
     const document = dom.window.document;
     assert.ok(
-      document.querySelector(".sidebar-bottom").textContent.includes("1.3.0"),
+      document.querySelector(".sidebar-bottom").textContent.includes("1.3.1"),
     );
     const heroImage = document.querySelector(".hero-visual img");
     assert.ok(heroImage && heroImage.getAttribute("alt"));

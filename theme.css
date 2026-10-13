@@ -1,0 +1,92 @@
+/* Playful lavender/mint theme. Solid reading surfaces keep lessons readable. */
+:root {
+  --ink: #26223d;
+  --muted: #665d7c;
+  --violet: #673bd1;
+  --lavender: #efe8ff;
+  --mint: #d9f8eb;
+  --outline: #ded5f3;
+}
+body { color: var(--ink); background: #f6f2ff; }
+.app > main {
+  background-color: #f8f5ff;
+  background-image:
+    radial-gradient(ellipse at 90% 8%, #ffd4e880 0, transparent 40%),
+    radial-gradient(ellipse at 5% 70%, #c7f6e680 0, transparent 42%),
+    radial-gradient(circle, #b9a8e440 1px, transparent 1.5px);
+  background-size: auto, auto, 24px 24px;
+  background-attachment: fixed;
+}
+.sidebar {
+  background: linear-gradient(165deg, #fff 45%, #f0eaff 100%);
+  border-right-color: var(--outline);
+}
+.brandicon { background: linear-gradient(135deg, #7448de, #d264ba); box-shadow: 4px 4px 0 #e3d5ff; }
+.brand strong { color: #32234f; }
+.sidebar nav button { color: #655d79; border: 1px solid transparent; }
+.sidebar nav button.selected {
+  background: #eae0ff; color: #5630ad; border-color: #d6c4ff;
+  box-shadow: 3px 3px 0 #c6f1de;
+}
+.sidebar nav button:hover { background: #f1eaff; color: #5630ad; }
+.sidebar-bottom { border-top-color: var(--outline); }
+.avatar { background: #eadfff; color: #6333bd; }
+header { background: #fffffff0; border-bottom-color: var(--outline); backdrop-filter: blur(12px); }
+.breadcrumb { color: #43315e; }
+.page-title h1, .section-head h2 { color: #33264e; letter-spacing: -.6px; }
+.page-title p, .section-head p { color: var(--muted); }
+.eyebrow.dark { color: #6637c6; }
+.hero { background: linear-gradient(125deg, #442187, #7342cc 65%, #b063cb); box-shadow: 7px 8px 0 #dfd0fa; border: 1px solid #7447b5; }
+.hero .primary { color: #5b2ead; background: #e3ffe9; box-shadow: 4px 4px 0 #28135d; }
+.hero-picture-label { color: #51317e; background: #fffffff0; }
+.stat, .lesson-card, .conversation-preview, .path, .quick,
+.lesson-detail, .flashcard, .settings, .game-panel {
+  border-color: var(--outline);
+  box-shadow: 4px 5px 0 #e6def580;
+}
+.stat { background: #fffdfd; border-top: 3px solid #c5b1f4; }
+.stat:nth-child(2) { border-top-color: #9dddc4; }
+.stat:nth-child(3) { border-top-color: #f2bbd4; }
+.stat strong { color: #49316c; }
+.stat > span, .stat p, .mini, .lesson-text p, .note { color: #71657f; }
+.lesson-card { background: #fff; border-radius: 22px; transition: transform .18s ease, box-shadow .18s ease; }
+.lesson-card:hover, .conversation-preview:hover {
+  transform: translateY(-3px); border-color: #b89ce9; box-shadow: 6px 9px 0 #ddcff3;
+}
+.lesson-card-art { border-radius: 15px; }
+.lesson-icon { color: #7541c9; background: #efe3ff; }
+.lesson-icon.travel { color: #087b61; background: #d9f8eb; }
+.lesson-text h3 { color: #352345; }
+.status, .conversation-preview > small { color: #6335b2; }
+.status.completed { color: #087b61; }
+.primary { background: var(--violet); color: white; border-radius: 12px; }
+.outline { border-color: #d5c3ee; color: #6439a8; background: #fff; }
+.filters button { background: #fff; border-color: #dacced; color: #625477; border-radius: 999px; }
+.filters button.active { background: #673bd1; border-color: #673bd1; color: #fff; box-shadow: 3px 3px 0 #b9edd6; }
+.track { background: #eee6fa; }
+.track i, .progressbar > div { background: linear-gradient(90deg, #8652df, #cd77bd); }
+.path.work { background: #f5eeff; }
+.path.travel { background: #edfff5; }
+.quick { background: #fff5fb; }
+.back { color: #6637bd; }
+.vocabulary-item { background: #fbf8ff; border-color: var(--outline); }
+.listening-situation, .game-meaning { background: #f0e7ff; color: #483660; }
+.scenario-picker { border-color: var(--outline); box-shadow: 3px 4px 0 #e7dcf4; }
+.conversation-player { border-color: var(--outline); box-shadow: 5px 6px 0 #e1d7f3; }
+.dialogue-line.partner { background: #f0e6ff; }
+.dialogue-line.learner { background: #dff8ec; }
+.dialogue-line strong { color: #58349c; }
+.dialogue-line .dialogue-translation { color: #625374; }
+.dialogue-line.speaking { border-color: #9353d3; box-shadow: 0 0 0 3px #ba8aea30; }
+.game-word-bank span { background: #f0e5fc; color: #654687; }
+button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-visible {
+  outline: 3px solid #8753d4; outline-offset: 3px;
+}
+@media (max-width: 650px) {
+  .app > main { background-attachment: scroll; }
+  .hero { box-shadow: 4px 5px 0 #dfd0fa; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lesson-card, .conversation-preview { transition: none; }
+  .lesson-card:hover, .conversation-preview:hover { transform: none; }
+}

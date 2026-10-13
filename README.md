@@ -128,17 +128,17 @@ Migration thêm dữ liệu và bảng `dialogue_lines`, không xóa bài học 
 
 ## Kiểm tra khi website vẫn hiện 8 bài hoặc giao diện cũ
 
-Bản 1.3.0 có nhãn **Phiên bản 1.3.0** ở chân thanh điều hướng, ảnh trên Tổng quan/thẻ Bài học và mục Luyện nghe từ vựng. HTML và API có header `Cache-Control: no-store`; asset JavaScript/CSS của Vite dùng tên theo nội dung. Ứng dụng không có service worker.
+Bản 1.3.1 có nhãn **Phiên bản 1.3.1** ở chân thanh điều hướng, ảnh trên Tổng quan/thẻ Bài học và mục Luyện nghe từ vựng. HTML và API có header `Cache-Control: no-store`; asset JavaScript/CSS của Vite dùng tên theo nội dung. Ứng dụng không có service worker.
 
 - `/app-version.json`: phiên bản frontend đã build.
 - `/api/version`: phiên bản backend, số bài/hội thoại/mẫu câu thực tế trong PostgreSQL và migration mới nhất; không trả về chuỗi kết nối hay biến môi trường.
 - Mọi phản hồi backend có header `X-CT-Speak-Version`.
 
-Với bản này, frontend/backend đều là `1.3.0`; CSDL phải có 39 bài, 34 hội thoại, 483 mẫu câu/từ vựng và migration `006_illustrated_conversations.sql`. Nếu website còn thiếu mục Luyện nghe từ vựng và hiện 8/8, giao diện được hiển thị là bản cũ. Nhật ký build đúng commit và HTTP 200 chưa chứng minh tên miền đang phục vụ đúng container.
+Với bản này, frontend/backend đều là `1.3.1`; CSDL phải có 39 bài, 34 hội thoại, 483 mẫu câu/từ vựng và migration `006_illustrated_conversations.sql`. Nếu website còn thiếu mục Luyện nghe từ vựng và hiện 8/8, giao diện được hiển thị là bản cũ. Nhật ký build đúng commit và HTTP 200 chưa chứng minh tên miền đang phục vụ đúng container.
 
 Sau khi triển khai, mở `/api/version` và `/app-version.json` để đối chiếu. Nếu vẫn trả về bản cũ hoặc không tồn tại mặc dù image mới đã LIVE, cần kiểm tra container thực tế mà Traefik đang định tuyến hoặc cache của nền tảng. Không xóa CSDL để xử lý lỗi frontend cũ.
 
-Banner trang Tổng quan dùng hình minh họa giao tiếp mới, màu sắc sống động và bố cục hiển thị ảnh trên cả máy tính/điện thoại. Tệp `public/illustrations/hero-conversation-vivid.png` được đóng gói cùng frontend; phiên bản giao diện hiện tại là 1.3.0.
+Banner trang Tổng quan dùng hình minh họa giao tiếp mới, màu sắc sống động và bố cục hiển thị ảnh trên cả máy tính/điện thoại. Tệp `public/illustrations/hero-conversation-vivid.png` được đóng gói cùng frontend; phiên bản giao diện hiện tại là 1.3.1.
 
 ## Mỗi bài có 10 câu giao tiếp
 
@@ -146,7 +146,7 @@ Migration `007_ten_sentences_per_lesson.sql` bổ sung 279 câu theo từng tìn
 
 Flashcards có đủ 390 câu và 93 từ vựng, tổng 483 thẻ. API trả `phrases` cho 10 câu thực hành, `vocabulary` cho từ vựng và `flashcards` kèm `phraseIndex` ổn định. Các câu mới được thêm sau mã câu/từ cũ; không thay đổi ID, thứ tự thẻ cũ trong từng bài, tiến độ hoàn thành hay lịch ôn đã lưu. Bài đã hoàn thành không tự bị đánh dấu chưa hoàn thành; người học có thể mở lại để luyện các câu mới.
 
-Phiên bản hiện tại: **1.3.0**. Triển khai lại từ `main`; `npm start` tự chạy migration mới. Không cần xóa hoặc seed lại CSDL.
+Phiên bản hiện tại: **1.3.1**. Triển khai lại từ `main`; `npm start` tự chạy migration mới. Không cần xóa hoặc seed lại CSDL.
 
 ## Trò chơi sau mỗi bài học
 
@@ -158,3 +158,5 @@ Sau câu thứ 10, nhấn **Hoàn thành bài học**. Ứng dụng lưu tiến 
 Nhập đáp án và nhấn **Kiểm tra đáp án** (hoặc Enter), xem phản hồi/câu mẫu, nghe lại câu rồi chuyển tiếp. Chấm theo câu đã học, bỏ qua chữ hoa, dấu câu, khoảng trắng và một số dạng viết tắt thông dụng. Câu diễn đạt khác có thể đúng ngữ pháp nhưng không khớp mẫu của trò chơi; phản hồi không khẳng định câu đó sai ngữ pháp.
 
 Kết thúc lượt chơi có điểm trên 5, nút **Chơi lại** với bộ câu được xáo lại và **Về thư viện**. Trò chơi có cho cả 39 bài. Bài học vẫn được lưu hoàn thành nếu người học rời trò chơi; điểm trò chơi chỉ hiển thị trong lượt chơi hiện tại, chưa lưu lịch sử điểm trên máy chủ. Không cần migration mới hoặc khóa API.
+
+Giao diện 1.3.1 dùng nền lavender–mint có họa tiết chấm, màu nhấn tím/hồng, thẻ viền nhẹ và bóng màu. Theme được đóng gói trong `theme.css`; giao diện có focus bàn phím và tôn trọng tùy chọn giảm chuyển động.

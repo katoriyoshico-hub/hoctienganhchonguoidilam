@@ -19,6 +19,7 @@ import {
   Flame,
 } from "lucide-react";
 import "./style.css";
+import "./theme.css";
 import Conversation, { SceneIllustration } from "./Conversation.jsx";
 import LessonGame from "./LessonGame.jsx";
 async function api(path, body, method = "PUT") {
