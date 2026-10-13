@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: ct_speak
+      # Isolated local development only. Never expose this port publicly.
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - "${CT_SPEAK_DATA_DIR:-../.ct-speak/postgres}:/var/lib/postgresql/data"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d ct_speak"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
