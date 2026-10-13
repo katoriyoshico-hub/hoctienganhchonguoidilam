@@ -1,4 +1,5 @@
 import express from "express";
+import { registerAI } from "./ai.js";
 import { registerYoutube } from "./youtube.js";
 import { registerState } from "./state.js";
 import { fileURLToPath } from "node:url";
@@ -29,6 +30,7 @@ export function createApp(pool, options = {}) {
   app.use(express.json({ limit: "32kb" }));
   registerState(app, pool);
   registerYoutube(app, options);
+  registerAI(app, pool, options);
   app.get("/api/health", async (_req, res) => {
     await pool.query("SELECT 1");
     res.json({ status: "ok" });

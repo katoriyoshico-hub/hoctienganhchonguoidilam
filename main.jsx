@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import "./style.css";
 import "./theme.css";
+import AIChat from "./AIChat.jsx";
 import Conversation, { SceneIllustration } from "./Conversation.jsx";
 import LessonGame from "./LessonGame.jsx";
 import YoutubeReader from "./YoutubeReader.jsx";
@@ -391,7 +392,7 @@ function App({ fields, lessons, scenarios, listeningExercises, initialState }) {
     ["roleplay", MessageCircle, "Hội thoại"],
     ["listening", Volume2, "Luyện nghe từ vựng"],
     ["youtube", Play, "YouTube → Văn bản"],
-    ["flashcards", Layers, "Flashcards"],
+    ["ai", MessageCircle, "Luyện giao tiếp AI"],
     ["progress", ChartNoAxesColumn, "Tiến độ"],
   ];
   return (
@@ -431,7 +432,7 @@ function App({ fields, lessons, scenarios, listeningExercises, initialState }) {
           </button>
           <span className="breadcrumb">
             Tiếng Anh Hữu Ích <span>/</span>{" "}
-            {nav.find((x) => x[0] === page)?.[2] || "Bài học"}
+            {page === "flashcards" ? "Flashcards" : nav.find((x) => x[0] === page)?.[2] || "Bài học"}
           </span>
           <span className="headright">
             <Flame size={18} color="#f69b41" /> Học mỗi ngày{" "}
@@ -961,11 +962,13 @@ function App({ fields, lessons, scenarios, listeningExercises, initialState }) {
                 </details>
               </>
             )}
+            {page === "ai" && <AIChat fields={fields} scenarios={scenarios} onFlashcards={()=>navigate("flashcards")} />}
             {page === "flashcards" && (
               <>
                 <div className="page-title">
                   <span className="eyebrow dark">ÔN TẬP NGẮT QUÃNG</span>
                   <h1>Flashcards</h1>
+                  <button className="outline" onClick={()=>navigate("ai")}>Quay lại luyện giao tiếp AI</button>
                   <p>Chạm vào thẻ để xem nghĩa, sau đó chọn mức độ ghi nhớ.</p>
                 </div>
                 <div className="flash-count">
