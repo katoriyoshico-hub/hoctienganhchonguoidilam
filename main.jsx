@@ -270,7 +270,14 @@ function App({ lessons, scenarios, listeningExercises, initialState }) {
     }
   };
   const all = lessons.flatMap((l) =>
-    l.phrases.map((p, i) => ({ key: `${l.id}-${i}`, p, lesson: l })),
+    (l.flashcards || l.phrases.map((p, i) => ({ p, phraseIndex: i }))).map(
+      (card) => ({
+        key: `${l.id}-${card.phraseIndex}`,
+        p: card.p,
+        lesson: l,
+        phraseIndex: card.phraseIndex,
+      }),
+    ),
   );
   const speak = (t, rate = 0.82) => {
     window.dispatchEvent(new Event("ct-stop-dialogue"));
@@ -335,8 +342,7 @@ function App({ lessons, scenarios, listeningExercises, initialState }) {
       const item = all[cardIdx];
       const result = await api("/api/state/reviews", {
         lessonId: item.lesson.id,
-        phraseIndex:
-          cardIdx - all.findIndex((x) => x.lesson.id === item.lesson.id),
+        phraseIndex: item.phraseIndex,
         rating,
       });
       setReviews((r) => ({ ...r, [item.key]: result }));

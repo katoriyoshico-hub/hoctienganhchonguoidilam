@@ -99,7 +99,7 @@ test("all ten PRD tables exist; migrations repeat without duplicating content", 
   const result = await request("/api/catalog");
   assert.equal(result.body.lessons.length, 39);
   assert.equal(result.body.scenarios.length, 34);
-  assert.equal(result.body.lessons.flatMap((l) => l.phrases).length, 204);
+  assert.equal(result.body.lessons.flatMap((l) => l.phrases).length, 390);
   assert.ok(
     result.body.scenarios.every(
       (s) => s.lines.length === 4 && s.hints.length === 4,
@@ -258,7 +258,7 @@ test("built frontend loads API content and saves learning changes without localS
   const dom = await browser(cookie);
   try {
     const document = dom.window.document;
-    assert.ok(document.body.textContent.includes("204"));
+    assert.ok(document.body.textContent.includes("483"));
     click(dom, "Bài học");
     await waitFor(() => document.querySelector(".lesson-grid"));
     assert.ok(document.body.textContent.includes("Database-backed lesson"));
@@ -272,6 +272,15 @@ test("built frontend loads API content and saves learning changes without localS
     await waitFor(() =>
       document.body.textContent.includes("Could you tell me more?"),
     );
+    for (let step = 3; step < 10; step++) {
+      click(dom, "Câu tiếp theo");
+      await waitFor(() =>
+        document
+          .querySelector(".lesson-footer span")
+          .textContent.trim()
+          .startsWith(`${step + 1} /`),
+      );
+    }
     click(dom, "Hoàn thành bài học");
     await waitFor(() => document.querySelector(".lesson-grid"));
     assert.ok((await request("/api/state")).body.done.includes(102));
@@ -383,7 +392,7 @@ test("new content covers sales, landmarks and souvenirs with vocabulary and revi
     105, 106, 107, 108, 109, 205, 206, 207, 208, 209, 210, 211, 212, 213, 214,
   ]) {
     const lesson = catalog.lessons.find((l) => l.id === id);
-    assert.equal(lesson.phrases.length, 6);
+    assert.equal(lesson.phrases.length, 10);
     assert.equal(lesson.vocabulary.length, 3);
     assert.ok(
       lesson.phrases.every(
@@ -461,7 +470,7 @@ test("upgrading an existing database preserves previous lessons and learner prog
     assert.equal(
       (await existing.query("SELECT COUNT(*)::int AS n FROM phrases")).rows[0]
         .n,
-      204,
+      483,
     );
     assert.equal(
       (await existing.query("SELECT title FROM lessons WHERE lesson_id=101"))
@@ -795,19 +804,19 @@ test("release diagnostics report real database counts and avoid caching the HTML
   const info = await fetch(origin + "/api/version");
   assert.equal(info.status, 200);
   assert.equal(info.headers.get("cache-control"), "no-store");
-  assert.equal(info.headers.get("x-ct-speak-version"), "1.1.1");
+  assert.equal(info.headers.get("x-ct-speak-version"), "1.2.0");
   const version = await info.json();
-  assert.equal(version.version, "1.1.1");
+  assert.equal(version.version, "1.2.0");
   assert.equal(version.lessons, 39);
   assert.equal(version.scenarios, 34);
-  assert.equal(version.phrases, 204);
-  assert.equal(version.migration, "006_illustrated_conversations.sql");
+  assert.equal(version.phrases, 483);
+  assert.equal(version.migration, "007_ten_sentences_per_lesson.sql");
   for (const path of ["/", "/index.html", "/app-version.json"]) {
     const response = await fetch(origin + path);
     assert.equal(response.status, 200);
     assert.ok(response.headers.get("cache-control").includes("no-store"));
     if (path === "/app-version.json")
-      assert.equal((await response.json()).version, "1.1.1");
+      assert.equal((await response.json()).version, "1.2.0");
   }
 });
 
@@ -816,7 +825,7 @@ test("home and lesson library show illustrations and the visible release label",
   try {
     const document = dom.window.document;
     assert.ok(
-      document.querySelector(".sidebar-bottom").textContent.includes("1.1.1"),
+      document.querySelector(".sidebar-bottom").textContent.includes("1.2.0"),
     );
     const heroImage = document.querySelector(".hero-visual img");
     assert.ok(heroImage && heroImage.getAttribute("alt"));
@@ -837,4 +846,43 @@ test("home and lesson library show illustrations and the visible release label",
   } finally {
     dom.window.close();
   }
+});
+
+test("all 39 lessons have ten sentences while vocabulary and existing review indexes stay separate", async () => {
+  const { body: catalog } = await request("/api/catalog");
+  assert.equal(catalog.lessons.length, 39);
+  assert.equal(catalog.lessons.flatMap((l) => l.phrases).length, 390);
+  assert.equal(catalog.lessons.flatMap((l) => l.flashcards).length, 483);
+  for (const lesson of catalog.lessons) {
+    assert.equal(lesson.phrases.length, 10);
+    assert.equal(
+      new Set(
+        lesson.phrases.map((p) => p[0].toLowerCase().replace(/[^a-z0-9]/g, "")),
+      ).size,
+      10,
+    );
+    assert.ok(
+      lesson.phrases.every(
+        (p) => p[1] && p[2].startsWith("/") && !p[2].includes("*"),
+      ),
+    );
+    assert.equal(lesson.flashcards.length, 10 + lesson.vocabulary.length);
+    if (lesson.vocabulary.length) {
+      assert.equal(lesson.flashcards[3].phraseIndex, 3);
+      assert.equal(lesson.flashcards[3].p[0], lesson.vocabulary[0][0]);
+      assert.ok(!lesson.phrases.some((p) => p[0] === lesson.vocabulary[0][0]));
+    }
+  }
+  const phraseId = 21404;
+  const saved = (
+    await pool.query(
+      "SELECT phrase_id FROM flashcard_reviews WHERE phrase_id=$1",
+      [phraseId],
+    )
+  ).rows;
+  assert.equal(saved.length, 1);
+  assert.equal(
+    catalog.lessons.find((l) => l.id === 214).flashcards[3].p[0],
+    "gift wrapping",
+  );
 });

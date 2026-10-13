@@ -40,9 +40,11 @@ export function createApp(pool) {
         SELECT l.lesson_id AS id, CASE m.category WHEN 'WORKPLACE_CONSULTING' THEN 'work' ELSE 'travel' END AS cat,
           l.title, l.target_situation AS "desc",
           (SELECT COALESCE(json_agg(json_build_array(p.english_text, p.vietnamese_meaning, p.ipa_phonetic) ORDER BY p.phrase_id), '[]'::json)
-            FROM phrases p WHERE p.lesson_id = l.lesson_id) AS phrases,
+            FROM phrases p WHERE p.lesson_id = l.lesson_id AND p.context_note IS DISTINCT FROM 'VOCABULARY') AS phrases,
           (SELECT COALESCE(json_agg(json_build_array(p.english_text, p.vietnamese_meaning, p.ipa_phonetic) ORDER BY p.phrase_id), '[]'::json)
-            FROM phrases p WHERE p.lesson_id = l.lesson_id AND p.context_note = 'VOCABULARY') AS vocabulary
+            FROM phrases p WHERE p.lesson_id = l.lesson_id AND p.context_note = 'VOCABULARY') AS vocabulary,
+          (SELECT COALESCE(json_agg(json_build_object('p',json_build_array(f.english_text,f.vietnamese_meaning,f.ipa_phonetic),'phraseIndex',f.phrase_index) ORDER BY f.phrase_id), '[]'::json)
+            FROM (SELECT p.*, (ROW_NUMBER() OVER (ORDER BY p.phrase_id)-1)::int AS phrase_index FROM phrases p WHERE p.lesson_id=l.lesson_id) f) AS flashcards
         FROM lessons l JOIN modules m USING(module_id) WHERE m.is_active
       ) l) AS lessons,
       (SELECT COALESCE(json_agg(s ORDER BY s.id), '[]'::json) FROM (
