@@ -101,7 +101,7 @@ test("all ten PRD tables exist; migrations repeat without duplicating content", 
   const result = await request("/api/catalog");
   assert.equal(result.body.lessons.length, 87);
   assert.equal(result.body.scenarios.length, 82);
-  assert.equal(result.body.lessons.flatMap((l) => l.phrases).length, 870);
+  assert.equal(result.body.lessons.flatMap((l) => l.phrases).length, 1740);
   assert.ok(
     result.body.scenarios.every(
       (s) => s.lines.length === 4 && s.hints.length === 4,
@@ -260,7 +260,7 @@ test("built frontend loads API content and saves learning changes without localS
   const dom = await browser(cookie);
   try {
     const document = dom.window.document;
-    assert.ok(document.body.textContent.includes("1107"));
+    assert.ok(document.body.textContent.includes("1977"));
     click(dom, "Bài học");
     await waitFor(() => document.querySelector(".lesson-grid"));
     assert.ok(document.body.textContent.includes("Database-backed lesson"));
@@ -274,7 +274,7 @@ test("built frontend loads API content and saves learning changes without localS
     await waitFor(() =>
       document.body.textContent.includes("Could you tell me more?"),
     );
-    for (let step = 3; step < 10; step++) {
+    for (let step = 3; step < 20; step++) {
       click(dom, "Câu tiếp theo");
       await waitFor(() =>
         document
@@ -398,7 +398,7 @@ test("new content covers sales, landmarks and souvenirs with vocabulary and revi
     105, 106, 107, 108, 109, 205, 206, 207, 208, 209, 210, 211, 212, 213, 214,
   ]) {
     const lesson = catalog.lessons.find((l) => l.id === id);
-    assert.equal(lesson.phrases.length, 10);
+    assert.equal(lesson.phrases.length, 20);
     assert.equal(lesson.vocabulary.length, 3);
     assert.ok(
       lesson.phrases.every(
@@ -476,7 +476,7 @@ test("upgrading an existing database preserves previous lessons and learner prog
     assert.equal(
       (await existing.query("SELECT COUNT(*)::int AS n FROM phrases")).rows[0]
         .n,
-      1107,
+      1977,
     );
     assert.equal(
       (await existing.query("SELECT title FROM lessons WHERE lesson_id=101"))
@@ -796,19 +796,19 @@ test("release diagnostics report real database counts and avoid caching the HTML
   const info = await fetch(origin + "/api/version");
   assert.equal(info.status, 200);
   assert.equal(info.headers.get("cache-control"), "no-store");
-  assert.equal(info.headers.get("x-ct-speak-version"), "1.10.0");
+  assert.equal(info.headers.get("x-ct-speak-version"), "1.11.0");
   const version = await info.json();
-  assert.equal(version.version, "1.10.0");
+  assert.equal(version.version, "1.11.0");
   assert.equal(version.lessons, 87);
   assert.equal(version.scenarios, 82);
-  assert.equal(version.phrases, 1107);
-  assert.equal(version.migration, "013_website_chat.sql");
+  assert.equal(version.phrases, 1977);
+  assert.equal(version.migration, "014_twenty_sentences_per_lesson.sql");
   for (const path of ["/", "/index.html", "/app-version.json"]) {
     const response = await fetch(origin + path);
     assert.equal(response.status, 200);
     assert.ok(response.headers.get("cache-control").includes("no-store"));
     if (path === "/app-version.json")
-      assert.equal((await response.json()).version, "1.10.0");
+      assert.equal((await response.json()).version, "1.11.0");
   }
 });
 
@@ -817,7 +817,7 @@ test("home and lesson library show illustrations and the visible release label",
   try {
     const document = dom.window.document;
     assert.ok(
-      document.querySelector(".sidebar-bottom").textContent.includes("1.10.0"),
+      document.querySelector(".sidebar-bottom").textContent.includes("1.11.0"),
     );
     assert.ok(!document.querySelector("nav").textContent.includes("YouTube"));
     const heroImage = document.querySelector(".hero-visual img");
@@ -846,25 +846,25 @@ test("home and lesson library show illustrations and the visible release label",
   }
 });
 
-test("all 87 lessons have ten sentences while vocabulary and existing review indexes stay separate", async () => {
+test("all 87 lessons have twenty sentences while vocabulary and existing review indexes stay separate", async () => {
   const { body: catalog } = await request("/api/catalog");
   assert.equal(catalog.lessons.length, 87);
-  assert.equal(catalog.lessons.flatMap((l) => l.phrases).length, 870);
-  assert.equal(catalog.lessons.flatMap((l) => l.flashcards).length, 1107);
+  assert.equal(catalog.lessons.flatMap((l) => l.phrases).length, 1740);
+  assert.equal(catalog.lessons.flatMap((l) => l.flashcards).length, 1977);
   for (const lesson of catalog.lessons) {
-    assert.equal(lesson.phrases.length, 10);
+    assert.equal(lesson.phrases.length, 20);
     assert.equal(
       new Set(
         lesson.phrases.map((p) => p[0].toLowerCase().replace(/[^a-z0-9]/g, "")),
       ).size,
-      10,
+      20,
     );
     assert.ok(
       lesson.phrases.every(
         (p) => p[1] && p[2].startsWith("/") && !p[2].includes("*"),
       ),
     );
-    assert.equal(lesson.flashcards.length, 10 + lesson.vocabulary.length);
+    assert.equal(lesson.flashcards.length, 20 + lesson.vocabulary.length);
     if (lesson.vocabulary.length) {
       assert.equal(lesson.flashcards[3].phraseIndex, 3);
       assert.equal(lesson.flashcards[3].p[0], lesson.vocabulary[0][0]);
@@ -922,7 +922,7 @@ test("end-of-lesson game grades typed answers, shows results and resets replay",
     await waitFor(() => document.querySelector(".lesson-card"));
     document.querySelector(".lesson-card").click();
     await waitFor(() => document.querySelector(".lesson-detail"));
-    for (let i = 1; i < 10; i++) {
+    for (let i = 1; i < 20; i++) {
       click(dom, "Câu tiếp theo");
       await waitFor(() =>
         document
@@ -994,7 +994,7 @@ test("eight new professional fields each have six complete lessons and six dialo
     assert.equal(dialogues.length, 6);
     for (const lesson of lessons) {
       assert.equal(lesson.cat, "work");
-      assert.equal(lesson.phrases.length, 10);
+      assert.equal(lesson.phrases.length, 20);
       assert.equal(lesson.vocabulary.length, 3);
       assert.equal(lesson.fieldTitle, field.title);
     }
