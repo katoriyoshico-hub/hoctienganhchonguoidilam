@@ -796,19 +796,19 @@ test("release diagnostics report real database counts and avoid caching the HTML
   const info = await fetch(origin + "/api/version");
   assert.equal(info.status, 200);
   assert.equal(info.headers.get("cache-control"), "no-store");
-  assert.equal(info.headers.get("x-ct-speak-version"), "1.11.0");
+  assert.equal(info.headers.get("x-ct-speak-version"), "1.12.0");
   const version = await info.json();
-  assert.equal(version.version, "1.11.0");
+  assert.equal(version.version, "1.12.0");
   assert.equal(version.lessons, 87);
   assert.equal(version.scenarios, 82);
   assert.equal(version.phrases, 1977);
-  assert.equal(version.migration, "014_twenty_sentences_per_lesson.sql");
+  assert.equal(version.migration, "015_cefr_lesson_levels.sql");
   for (const path of ["/", "/index.html", "/app-version.json"]) {
     const response = await fetch(origin + path);
     assert.equal(response.status, 200);
     assert.ok(response.headers.get("cache-control").includes("no-store"));
     if (path === "/app-version.json")
-      assert.equal((await response.json()).version, "1.11.0");
+      assert.equal((await response.json()).version, "1.12.0");
   }
 });
 
@@ -817,7 +817,7 @@ test("home and lesson library show illustrations and the visible release label",
   try {
     const document = dom.window.document;
     assert.ok(
-      document.querySelector(".sidebar-bottom").textContent.includes("1.11.0"),
+      document.querySelector(".sidebar-bottom").textContent.includes("1.12.0"),
     );
     assert.ok(!document.querySelector("nav").textContent.includes("YouTube"));
     const heroImage = document.querySelector(".hero-visual img");
@@ -1167,5 +1167,30 @@ test('Enter sends chat while Shift Enter keeps composing',async()=>{
   input.dispatchEvent(new dom.window.KeyboardEvent('keydown',{key:'Enter',bubbles:true,cancelable:true}));
   await waitFor(()=>document.querySelectorAll('.ai-message').length===2);
   assert.equal(document.querySelector('.ai-message.user p').textContent,'Hello');
+ }finally{dom.window.close();}
+});
+
+test('CEFR catalog has six ordered levels in three groups and every lesson is classified',async()=>{
+ const {body:catalog}=await request('/api/catalog');
+ assert.deepEqual(catalog.levels.map(l=>l.code),['A1','A2','B1','B2','C1','C2']);
+ assert.deepEqual(catalog.levels.map(l=>l.group),['basic','basic','independent','independent','proficient','proficient']);
+ for(const l of catalog.lessons){const level=catalog.levels.find(v=>v.code===l.level);assert.ok(level);assert.equal(l.levelTitle,level.title);assert.equal(l.levelOrder,level.order);assert.equal(l.levelGroup,level.groupTitle);assert.equal(l.phrases.length,20);}
+ assert.equal(catalog.lessons.filter(l=>l.level==='C1'||l.level==='C2').length,0);
+});
+test('lesson levels filter cards, show empty advanced levels and appear in lesson details',async()=>{
+ const dom=await browser(cookie);
+ try{
+  const document=dom.window.document;click(dom,'Bài học');await waitFor(()=>document.querySelector('.cefr-groups'));
+  assert.equal(document.querySelectorAll('.cefr-group').length,3);assert.equal(document.querySelectorAll('.cefr-group button').length,6);
+  const select=code=>[...document.querySelectorAll('.cefr-group button')].find(b=>b.querySelector('strong').textContent===code).click();
+  select('A2');await waitFor(()=>document.querySelector('.cefr-group button[aria-pressed="true"]')?.textContent.includes('A2'));
+  assert.ok([...document.querySelectorAll('.lesson-card .mini')].every(c=>c.textContent.trim().startsWith('A2')));
+  assert.ok(document.querySelectorAll('.lesson-card').length>0);
+  select('C2');await waitFor(()=>document.querySelector('.cefr-empty'));assert.equal(document.querySelectorAll('.lesson-card').length,0);
+  click(dom,'Tất cả cấp độ');await waitFor(()=>document.querySelectorAll('.lesson-card').length===87);
+  assert.ok(document.querySelector('.lesson-card .mini').textContent.trim().startsWith('A1'));
+  select('A2');await waitFor(()=>document.querySelector('.lesson-card .mini')?.textContent.trim().startsWith('A2'));
+  document.querySelector('.lesson-card').click();await waitFor(()=>document.querySelector('.lesson-detail'));
+  assert.ok(document.querySelector('.page-title .eyebrow').textContent.trim().startsWith('A2'));
  }finally{dom.window.close();}
 });

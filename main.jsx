@@ -78,6 +78,7 @@ function Catalog() {
   if (!data) return <main role="status">Đang tải nội dung học…</main>;
   return (
     <App
+      levels={data.levels || []}
       fields={data.fields || []}
       lessons={data.lessons}
       scenarios={data.scenarios}
@@ -248,10 +249,11 @@ function ListeningPractice({ exercises, speak }) {
   );
 }
 
-function App({ fields, lessons, scenarios, listeningExercises, initialState }) {
+function App({ levels, fields, lessons, scenarios, listeningExercises, initialState }) {
   const [page, setPage] = useState("home"),
     [category, setCategory] = useState("all"),
     [lessonField, setLessonField] = useState("all"),
+    [lessonLevel,setLessonLevel] = useState("all"),
     [scenarioField, setScenarioField] = useState("all"),
     [done, setDone] = useState(initialState.done),
     [goal, setGoal] = useState(initialState.goal),
@@ -641,6 +643,19 @@ function App({ fields, lessons, scenarios, listeningExercises, initialState }) {
                     </button>
                   ))}
                 </div>
+                <section className="cefr-levels" aria-label="Cấp độ tiếng Anh">
+                  <div className="cefr-heading"><h2>Chọn cấp độ của bạn</h2><button className={lessonLevel==='all'?'outline active':'outline'} onClick={()=>setLessonLevel('all')}>Tất cả cấp độ</button></div>
+                  <div className="cefr-groups">
+                    {['basic','independent','proficient'].map(group=><div className={'cefr-group '+group} key={group}>
+                      <h3>{levels.find(l=>l.group===group)?.groupTitle}</h3>
+                      {levels.filter(l=>l.group===group).map(level=><button key={level.code} aria-pressed={lessonLevel===level.code} className={lessonLevel===level.code?'active':''} onClick={()=>setLessonLevel(level.code)}>
+                        <strong>{level.code}</strong><span>{level.title}<small>{lessons.filter(l=>l.level===level.code&&(category==='all'||l.cat===category)&&(lessonField==='all'||String(l.fieldId)===lessonField)).length} bài học</small></span>
+                      </button>)}
+                    </div>)}
+                  </div>
+                  <p className="note">Mức gợi ý theo nội dung bài; một số câu mở rộng có thể khó hơn. C1 và C2 hiện chưa có bài chuyên sâu tương ứng.</p>
+                  {lessonLevel!=='all'&&<p className="cefr-description">{lessonLevel} · {levels.find(l=>l.code===lessonLevel)?.description}</p>}
+                </section>
                 <label className="field-filter">
                   Lĩnh vực
                   <select
@@ -664,9 +679,11 @@ function App({ fields, lessons, scenarios, listeningExercises, initialState }) {
                     .filter(
                       (l) =>
                         (category === "all" || l.cat === category) &&
+                        (lessonLevel === "all" || l.level === lessonLevel) &&
                         (lessonField === "all" ||
                           String(l.fieldId) === lessonField),
                     )
+                    .sort((a,b)=>a.levelOrder-b.levelOrder||a.id-b.id)
                     .map((l, i) => (
                       <button
                         className="lesson-card"
@@ -681,7 +698,7 @@ function App({ fields, lessons, scenarios, listeningExercises, initialState }) {
                         </div>
                         <div className="lesson-text">
                           <span className="mini">
-                            {l.fieldTitle} · BÀI {l.id} · 15 PHÚT
+                            {l.level} · {l.fieldTitle} · BÀI {l.id} · 15 PHÚT
                           </span>
                           <h3>{l.title}</h3>
                           <p>{l.desc}</p>
@@ -699,6 +716,7 @@ function App({ fields, lessons, scenarios, listeningExercises, initialState }) {
                       </button>
                     ))}
                 </div>
+                {!lessons.some(l=>(lessonLevel==='all'||l.level===lessonLevel)&&(category==='all'||l.cat===category)&&(lessonField==='all'||String(l.fieldId)===lessonField))&&<div className="cefr-empty" role="status">Chưa có bài phù hợp với cấp độ và lĩnh vực đã chọn. Bạn có thể chọn cấp độ khác hoặc Tất cả cấp độ.</div>}
               </>
             )}
             {page === "lesson" && (
@@ -708,7 +726,7 @@ function App({ fields, lessons, scenarios, listeningExercises, initialState }) {
                 </button>
                 <div className="page-title">
                   <span className="eyebrow dark">
-                    BÀI {active.id} · MẪU CÂU {idx + 1}/{active.phrases.length}
+                    {active.level} · BÀI {active.id} · MẪU CÂU {idx + 1}/{active.phrases.length}
                   </span>
                   <h1>{active.title}</h1>
                   <p>{active.desc}</p>

@@ -38,10 +38,12 @@ export function createApp(pool, options = {}) {
     const {
       rows: [catalog],
     } = await pool.query(`SELECT
+      (SELECT json_agg(json_build_object('code',code,'title',title,'group',group_code,'groupTitle',group_title,'description',description,'order',sort_order) ORDER BY sort_order) FROM cefr_levels) AS levels,
       (SELECT COALESCE(json_agg(json_build_object('id',module_id,'title',title,'category',category) ORDER BY order_index,module_id),'[]'::json) FROM modules WHERE is_active) AS fields,
       (SELECT COALESCE(json_agg(l ORDER BY l.id), '[]'::json) FROM (
         SELECT l.lesson_id AS id, CASE m.category WHEN 'TRAVEL_SURVIVAL' THEN 'travel' ELSE 'work' END AS cat,
           l.illustration_key AS "illustrationKey", l.illustration_alt AS "illustrationAlt",
+          l.cefr_level AS "level", c.title AS "levelTitle", c.group_title AS "levelGroup", c.sort_order AS "levelOrder",
           l.title, l.target_situation AS "desc", m.module_id AS "fieldId", m.title AS "fieldTitle",
           (SELECT COALESCE(json_agg(json_build_array(p.english_text, p.vietnamese_meaning, p.ipa_phonetic) ORDER BY p.phrase_id), '[]'::json)
             FROM phrases p WHERE p.lesson_id = l.lesson_id AND p.context_note IS DISTINCT FROM 'VOCABULARY') AS phrases,
@@ -49,7 +51,7 @@ export function createApp(pool, options = {}) {
             FROM phrases p WHERE p.lesson_id = l.lesson_id AND p.context_note = 'VOCABULARY') AS vocabulary,
           (SELECT COALESCE(json_agg(json_build_object('p',json_build_array(f.english_text,f.vietnamese_meaning,f.ipa_phonetic),'phraseIndex',f.phrase_index) ORDER BY f.phrase_id), '[]'::json)
             FROM (SELECT p.*, (ROW_NUMBER() OVER (ORDER BY p.phrase_id)-1)::int AS phrase_index FROM phrases p WHERE p.lesson_id=l.lesson_id) f) AS flashcards
-        FROM lessons l JOIN modules m USING(module_id) WHERE m.is_active
+        FROM lessons l JOIN modules m USING(module_id) JOIN cefr_levels c ON c.code=l.cefr_level WHERE m.is_active
       ) l) AS lessons,
       (SELECT COALESCE(json_agg(s ORDER BY s.id), '[]'::json) FROM (
         SELECT s.scenario_id AS id, s.lesson_id AS "lessonId", s.title, s.ai_role_name AS role, s.user_role_name AS "userRole", s.context_briefing AS briefing, m.module_id AS "fieldId", m.title AS "fieldTitle",
