@@ -62,11 +62,22 @@ Bộ kiểm thử tích hợp chạy trên PostgreSQL và giao diện đã build
 
 ```bash
 npm ci
-npm run db:migrate
 npm run build
 NODE_ENV=production npm start
 ```
 
-Cấu hình `DATABASE_URL` tới PostgreSQL có xác thực; giữ chuỗi kết nối ở máy chủ, không đưa vào frontend. Đặt `HOST=0.0.0.0` nếu nền tảng yêu cầu và cung cấp HTTPS qua reverse proxy. Khi `NODE_ENV=production`, cookie chỉ gửi qua HTTPS. API phục vụ cả `dist`; frontend tĩnh trên Vercel/Netlify riêng cần cấu hình proxy `/api` tới backend. Không thể triển khai đầy đủ chỉ bằng việc tải `dist` lên hosting tĩnh.
+Cấu hình `DATABASE_URL` tới PostgreSQL có xác thực; giữ chuỗi kết nối ở máy chủ, không đưa vào frontend. Máy chủ mặc định lắng nghe trên `0.0.0.0` và dùng cổng trong biến `PORT`; giữ `HOST=0.0.0.0` khi triển khai container và cung cấp HTTPS qua reverse proxy. Khi `NODE_ENV=production`, cookie chỉ gửi qua HTTPS. API phục vụ cả `dist`; frontend tĩnh trên Vercel/Netlify riêng cần cấu hình proxy `/api` tới backend. Không thể triển khai đầy đủ chỉ bằng việc tải `dist` lên hosting tĩnh.
 
 Phát âm và nhận diện giọng nói vẫn dùng Web Speech API, phụ thuộc trình duyệt, quyền microphone và có thể cần mạng. Hội thoại vẫn dựa trên kịch bản trong CSDL; chưa có AI sinh phản hồi hay chấm phát âm. Lịch ôn hiện giữ quy tắc 10 phút / 1 ngày / 4 ngày, chưa triển khai SM-2 đầy đủ. Lộ trình hiện có 8 bài; không tuyên bố đáp ứng toàn bộ tiêu chí sản phẩm trong PRD.
+
+## Triển khai trên Vibehost
+
+Dùng nhánh `main`. Nếu nền tảng hỗ trợ Dockerfile, dùng Dockerfile trong repository (Node.js 24, build frontend và đóng gói backend/migration). Nếu dùng Node trực tiếp, chọn Node.js 24, lệnh build `npm ci && npm run build`, lệnh chạy `npm start`.
+
+- Cấu hình `DATABASE_URL` trong phần biến môi trường của Vibehost tới PostgreSQL mà container truy cập được. Không dùng địa chỉ PostgreSQL loopback trong `.env.example` cho hosting; đó chỉ là CSDL máy phát triển.
+- Đặt `HOST=0.0.0.0`, `NODE_ENV=production`; Đặt `PORT=3001` nếu health check của Vibehost đang chờ cổng 3001 như nhật ký triển khai này. Nếu nền tảng bắt buộc cấp cổng khác qua `PORT`, cấu hình cổng dịch vụ/health check khớp với cổng đó; ứng dụng luôn đọc `PORT`. Không tải `.env` chứa mật khẩu lên GitHub hoặc image.
+- Khi chạy `npm start`, ứng dụng tự chạy migration và seed trước khi mở cổng. CSDL mới tự được khởi tạo; khởi động lại không tạo nội dung trùng. Tài khoản CSDL cần quyền tạo bảng, sequence và ghi dữ liệu trong schema `public`. Không chạy migration trong bước build vì build có thể không có quyền kết nối CSDL.
+- Dùng `/api/health` làm đường dẫn health check nếu nền tảng cho cấu hình. Khi PostgreSQL chưa truy cập được, ứng dụng báo lỗi thay vì che giấu bằng dữ liệu giả. Dùng HTTPS để cookie hồ sơ học tập hoạt động trong production.
+- Sau khi triển khai, kiểm tra `/api/health`, `/api/catalog` và hoàn thành một bài rồi tải lại trang để xác minh tiến độ được lưu.
+
+Kiểm thử triển khai sử dụng CSDL trống, chạy đúng hàm khởi động production, kiểm tra health check rồi khởi động lần nữa trên cùng CSDL. Chưa xác minh trực tiếp phiên triển khai của tài khoản Vibehost.

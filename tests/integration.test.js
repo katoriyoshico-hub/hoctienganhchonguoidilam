@@ -6,6 +6,7 @@ import pg from "pg";
 import { JSDOM } from "jsdom";
 import { migrate } from "../server/migrate.js";
 import { createApp } from "../server/app.js";
+import { startServer } from "../server/index.js";
 let admin, pool, server, origin;
 const name = `ct_speak_test_${process.pid}`;
 let cookie = "";
@@ -29,9 +30,7 @@ before(async () => {
   const url = new URL(process.env.DATABASE_URL);
   url.pathname = "/" + name;
   pool = new pg.Pool({ connectionString: url.href });
-  await migrate(pool);
-  server = createApp(pool).listen(0, "127.0.0.1");
-  await once(server, "listening");
+  server = await startServer({ pool, port: 0, host: "0.0.0.0" });
   origin = `http://127.0.0.1:${server.address().port}`;
 });
 after(async () => {
@@ -40,6 +39,20 @@ after(async () => {
   if (admin) {
     await admin.query(`DROP DATABASE IF EXISTS ${name}`);
     await admin.end();
+  }
+});
+test("deployment starts on an empty database and restarts without reseeding", async () => {
+  assert.equal(server.address().address, "0.0.0.0");
+  assert.equal((await request("/api/health")).status, 200);
+  const restarted = await startServer({ pool, port: 0, host: "0.0.0.0" });
+  try {
+    const response = await fetch(
+      `http://127.0.0.1:${restarted.address().port}/api/catalog`,
+    );
+    assert.equal(response.status, 200);
+    assert.equal((await response.json()).lessons.length, 8);
+  } finally {
+    await new Promise((resolve) => restarted.close(resolve));
   }
 });
 test("all ten PRD tables exist; migrations repeat without duplicating content", async () => {
