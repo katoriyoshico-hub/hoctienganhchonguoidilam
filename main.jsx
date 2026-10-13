@@ -24,7 +24,6 @@ import "./theme.css";
 import AIChat from "./AIChat.jsx";
 import Conversation, { SceneIllustration } from "./Conversation.jsx";
 import LessonGame from "./LessonGame.jsx";
-import YoutubeReader from "./YoutubeReader.jsx";
 async function api(path, body, method = "PUT") {
   const r = await fetch(path, {
     method,
@@ -391,7 +390,6 @@ function App({ fields, lessons, scenarios, listeningExercises, initialState }) {
     ["lessons", BookOpen, "Bài học"],
     ["roleplay", MessageCircle, "Hội thoại"],
     ["listening", Volume2, "Luyện nghe từ vựng"],
-    ["youtube", Play, "YouTube → Văn bản"],
     ["ai", MessageCircle, "Luyện giao tiếp AI"],
     ["progress", ChartNoAxesColumn, "Tiến độ"],
   ];
@@ -807,7 +805,6 @@ function App({ fields, lessons, scenarios, listeningExercises, initialState }) {
                 onClose={() => navigate("lessons")}
               />
             )}
-            {page === "youtube" && <YoutubeReader />}
             {page === "listening" && (
               <ListeningPractice exercises={listeningExercises} speak={speak} />
             )}
@@ -962,7 +959,7 @@ function App({ fields, lessons, scenarios, listeningExercises, initialState }) {
                 </details>
               </>
             )}
-            {page === "ai" && <AIChat fields={fields} scenarios={scenarios} onFlashcards={()=>navigate("flashcards")} />}
+            {page === "ai" && <AIChat onFlashcards={()=>navigate("flashcards")} />}
             {page === "flashcards" && (
               <>
                 <div className="page-title">

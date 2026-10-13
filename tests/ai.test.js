@@ -19,7 +19,8 @@ test('Gemini adapter sends contextual conversation and returns bilingual correct
  assert.ok(call.url.includes('gemini-2.5-flash:generateContent'));
  assert.equal(call.options.headers['x-goog-api-key'],'test-key');
  const body=JSON.parse(call.options.body);
- assert.ok(body.systemInstruction.parts[0].text.includes('Seller'));
+ assert.ok(body.systemInstruction.parts[0].text.includes('without assigned roles'));
+ assert.ok(!body.systemInstruction.parts[0].text.includes('Seller'));
  assert.equal(body.contents[1].role,'model');
  assert.equal(body.contents[2].parts[0].text,'I want gift');
  assert.equal(body.generationConfig.responseMimeType,'application/json');
