@@ -115,8 +115,8 @@ function ListeningPractice({ exercises, speak, fields, levels }) {
     setCompleted(0);
     setFinished(false);
   };
-  const relevant=exercises.filter(e=>e.fieldId===exercise?.fieldId&&e.level===exercise?.level);
-  const distractors = [...new Set([...relevant,...exercises].map((e) => e.meaning))]
+  const relevant=exercises.filter(e=>e.type===exercise?.type&&e.fieldId===exercise?.fieldId&&e.level===exercise?.level);
+  const distractors = [...new Set([...relevant,...exercises.filter(e=>e.type===exercise?.type),...exercises].map((e) => e.meaning))]
     .filter((m) => m !== exercise?.meaning)
     .slice(0, 3);
   const choices = exercise ? [exercise.meaning, ...distractors] : [];
@@ -129,7 +129,7 @@ function ListeningPractice({ exercises, speak, fields, levels }) {
   }
   const play = (rate) => {
     if(!exercise)return;
-    const text = exercise.spokenText + " Key word: " + exercise.word + ".";
+    const text = exercise.type === "sentence" ? exercise.spokenText : exercise.spokenText + " Key word: " + exercise.word + ".";
     speak(text, rate);
     if ("speechSynthesis" in window) setPlayed(true);
   };
@@ -184,7 +184,7 @@ function ListeningPractice({ exercises, speak, fields, levels }) {
               Nghe chậm
             </button>
           </div>
-          <h3>Từ khóa bạn vừa nghe có nghĩa là gì?</h3>
+          <h3>{exercise.type === "sentence" ? "Câu bạn vừa nghe có nghĩa là gì?" : "Từ khóa bạn vừa nghe có nghĩa là gì?"}</h3>
           {!played && (
             <p>Nhấn nghe để bắt đầu. Bạn có thể nghe lại nhiều lần.</p>
           )}
@@ -212,7 +212,7 @@ function ListeningPractice({ exercises, speak, fields, levels }) {
               <strong>
                 {answer === exercise.meaning
                   ? "Chính xác!"
-                  : "Chưa đúng. Hãy nghe lại và chú ý từ khóa."}
+                  : exercise.type === "sentence" ? "Chưa đúng. Hãy nghe lại cả câu." : "Chưa đúng. Hãy nghe lại và chú ý từ khóa."}
               </strong>
               <p>
                 <b>{exercise.word}</b> {exercise.ipa} — {exercise.meaning}
