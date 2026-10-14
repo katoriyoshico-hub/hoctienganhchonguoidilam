@@ -1298,3 +1298,43 @@ test("level progress shows independent percentages in ascending columns on home 
     verify();
   } finally {dom.window.close();}
 });
+
+test('dictionary searches English and unaccented Vietnamese, speaks and opens source lessons', async () => {
+  const dom = await browser(cookie);
+  try {
+    const document = dom.window.document;
+    click(dom, 'Từ điển Anh–Việt');
+    await waitFor(() => document.querySelector('#dictionary-query'));
+    const input = document.querySelector('#dictionary-query');
+    const search = async (value) => {
+      Object.getOwnPropertyDescriptor(dom.window.HTMLInputElement.prototype, 'value').set.call(input, value);
+      input.dispatchEvent(new dom.window.Event('input', { bubbles: true }));
+      await new Promise(resolve => setTimeout(resolve, 30));
+    };
+    assert.equal(document.querySelectorAll('.dictionary-entry').length, 30);
+    click(dom, 'Xem thêm kết quả');
+    await waitFor(() => document.querySelectorAll('.dictionary-entry').length === 60);
+    await search('  CUSTOMER  ');
+    assert.equal(document.querySelector('.dictionary-entry h2').textContent, 'customer');
+    assert.ok(document.querySelector('.dictionary-entry').textContent.includes('khách hàng'));
+    assert.ok(document.querySelector('.dictionary-ipa').textContent.includes('kʌstəmər'));
+    let spoken;
+    dom.window.speechSynthesis = {cancel() {}, speak(utterance) { spoken = utterance; }};
+    dom.window.SpeechSynthesisUtterance = function(text) { this.text = text; };
+    document.querySelector('.dictionary-entry .outline').click();
+    assert.equal(spoken.text, 'customer');
+    assert.equal(spoken.lang, 'en-US');
+    await search('ngan sach');
+    assert.ok([...document.querySelectorAll('.dictionary-entry h2')].some(el => el.textContent === 'budget'));
+    await search('zzzz-no-such-word');
+    assert.equal(document.querySelectorAll('.dictionary-entry').length, 0);
+    assert.ok(document.querySelector('.dictionary').textContent.includes('Chưa tìm thấy từ này'));
+    click(dom, 'Xóa');
+    await waitFor(() => input.value === '' && document.querySelectorAll('.dictionary-entry').length === 30);
+    await search('customer');
+    const sourceTitle = document.querySelector('.dictionary-lesson').textContent.replace('Bài học: ', '').trim();
+    document.querySelector('.dictionary-lesson').click();
+    await waitFor(() => !document.querySelector('.dictionary'));
+    assert.ok(document.querySelector('.content').textContent.includes(sourceTitle));
+  } finally { dom.window.close(); }
+});

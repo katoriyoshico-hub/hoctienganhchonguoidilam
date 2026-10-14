@@ -22,6 +22,7 @@ import {
 import "./style.css";
 import "./theme.css";
 import AIChat from "./AIChat.jsx";
+import Dictionary from "./Dictionary.jsx";
 import Conversation, { SceneIllustration } from "./Conversation.jsx";
 import LessonGame from "./LessonGame.jsx";
 async function api(path, body, method = "PUT") {
@@ -412,6 +413,7 @@ function App({ levels, fields, lessons, scenarios, listeningExercises, initialSt
   const nav = [
     ["home", House, "Tổng quan"],
     ["lessons", BookOpen, "Bài học"],
+    ["dictionary", BookOpen, "Từ điển Anh–Việt"],
     ["roleplay", MessageCircle, "Hội thoại"],
     ["listening", Volume2, "Luyện nghe từ vựng"],
     ["ai", MessageCircle, "Chat luyện tiếng Anh"],
@@ -995,6 +997,7 @@ function App({ levels, fields, lessons, scenarios, listeningExercises, initialSt
                 </details>
               </>
             )}
+            {page === "dictionary" && <Dictionary lessons={lessons} speak={speak} openLesson={openLesson} />}
             {page === "ai" && <AIChat onFlashcards={()=>navigate("flashcards")} />}
             {page === "flashcards" && (
               <>
